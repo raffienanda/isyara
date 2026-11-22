@@ -4,11 +4,7 @@ import { family, getLocal, saveLocal, setLocalOwner, units } from "./data";
 export const roles = {
   student: { label: "Siswa", start: "home", pages: ["home", "science", "family", "bridge", "text", "speech", "class"] },
   parent: { label: "Orang tua", start: "family", pages: ["home", "family", "speech", "progress"] },
-  teacher: { label: "Guru", start: "bridge", pages: ["home", "science", "family", "bridge", "text", "class", "progress"] },
-  gpk: { label: "Guru Pendamping Khusus", start: "progress", pages: ["home", "science", "family", "bridge", "text", "class", "progress"] },
-  therapist: { label: "Terapis", start: "speech", pages: ["speech", "progress"] },
-  curator: { label: "Kurator", start: "curate", pages: ["curate"] },
-  admin: { label: "Admin sekolah", start: "school", pages: ["school"] },
+  teacher: { label: "Guru", start: "bridge", pages: ["home", "science", "family", "bridge", "text", "speech", "class", "progress", "curate", "school"] },
 };
 async function accountApi(action, data = {}, signal) {
   const res = await fetch("./account.php", {
@@ -252,7 +248,7 @@ export function AccountProgress({ download }) {
         <button className="primary" disabled={busy || !draft.trim()}>Simpan catatan</button>
       </form>
       {detail.notes.map(note => <blockquote key={note.id}>
-        <small>{note.name} · {roles[note.role].label}</small>
+        <small>{note.name}{roles[note.role] ? ` · ${roles[note.role].label}` : ""}</small>
         <p>{note.text}</p>
       </blockquote>)}
       <div className="controls">

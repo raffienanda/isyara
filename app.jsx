@@ -280,7 +280,7 @@ function Science({ id }) {
         </section>}
         <p role="status">{result}</p>
       </section>
-      {["teacher", "gpk"].includes(account.role) && <section className="sheet toolSection">
+      {account.role === "teacher" && <section className="sheet toolSection">
         <h2>Untuk pengajar</h2>
         <div className="controls">
           <button aria-expanded={sharing} aria-controls="science-share" onClick={() => showSharing(!sharing)}>Bagikan unit</button>

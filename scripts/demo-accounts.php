@@ -16,10 +16,6 @@ $accounts = [
     'siswa-b' => ['Siswa Demo B', 'student', 1],
     'orangtua' => ['Orang Tua Demo', 'parent', 0],
     'guru' => ['Guru Demo', 'teacher', 0],
-    'gpk' => ['GPK Demo', 'gpk', 0],
-    'terapis' => ['Terapis Demo', 'therapist', 0],
-    'kurator' => ['Kurator Demo', 'curator', 0],
-    'admin' => ['Admin Demo', 'admin', 0],
 ];
 $db->beginTransaction();
 $insert = $db->prepare('INSERT INTO accounts (username,password,name,role,sync_allowed) VALUES (?,?,?,?,?) ON CONFLICT(username) DO UPDATE SET password=excluded.password WHERE accounts.name=excluded.name AND accounts.role=excluded.role');
@@ -36,17 +32,14 @@ foreach ([['Kelas Demo A','siswa'], ['Kelas Demo A','guru'], ['Kelas Demo B','si
     $membership->execute([$class, $member]);
 }
 $link = $db->prepare('INSERT OR IGNORE INTO student_links SELECT a.id,s.id FROM accounts a,accounts s WHERE a.username=? AND s.username=?');
-foreach (['orangtua','gpk','terapis'] as $companion) {
-    $link->execute([$companion, 'siswa']);
-}
-$link->execute(['gpk', 'siswa-b']);
+$link->execute(['orangtua', 'siswa']);
 $db->commit();
 
 if ($hosting) {
     echo "Akun awal ISYARA untuk Rumahweb\n";
     foreach ($credentials as $username => $credential) echo "$username: $credential\n";
 } else {
-    echo "Tujuh peran demo ISYARA lokal\n";
+    echo "Tiga peran demo ISYARA lokal\n";
     echo "Nama pengguna: " . implode(', ', array_keys($accounts)) . "\n";
     echo "Kata sandi demo: $password\n";
 }

@@ -28,7 +28,7 @@ function accountDatabase(?string $directory = null): PDO
             username TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL,
             name TEXT NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('student','parent','teacher','gpk','therapist','curator','admin')),
+            role TEXT NOT NULL CHECK(role IN ('student','parent','teacher')),
             sync_allowed INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS classes (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
@@ -78,12 +78,22 @@ function startAccountSession(): void
     session_start();
 }
 
+function activeAccountRole(string $role): bool
+{
+    return in_array($role, ['student', 'parent', 'teacher'], true);
+}
+
 function signedInAccount(PDO $db): ?array
 {
     if (!isset($_SESSION['account_id'])) return null;
     $query = $db->prepare('SELECT id, name, role, sync_allowed FROM accounts WHERE id=?');
     $query->execute([$_SESSION['account_id']]);
-    return $query->fetch() ?: null;
+    $account = $query->fetch();
+    if (!$account || !activeAccountRole($account['role'])) {
+        unset($_SESSION['account_id']);
+        return null;
+    }
+    return $account;
 }
 
 function accessibleStudents(PDO $db, array $account): array
@@ -91,7 +101,7 @@ function accessibleStudents(PDO $db, array $account): array
     $scope = match ($account['role']) {
         'student' => 's.id=?',
         'teacher' => 'EXISTS (SELECT 1 FROM class_members sc JOIN class_members tc ON tc.class_id=sc.class_id WHERE sc.account_id=s.id AND tc.account_id=?)',
-        'parent', 'gpk', 'therapist' => 'EXISTS (SELECT 1 FROM student_links l WHERE l.student_id=s.id AND l.companion_id=?)',
+        'parent' => 'EXISTS (SELECT 1 FROM student_links l WHERE l.student_id=s.id AND l.companion_id=?)',
         default => null,
     };
     if ($scope === null) return [];

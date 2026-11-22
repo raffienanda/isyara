@@ -391,7 +391,7 @@ function Literacy() {
     [review, lock] = useSaved("reviewed", null),
     [open, select] = useState(null);
   const text = versions?.[lv] ?? "";
-  const canReview = ["teacher", "gpk"].includes(account.role);
+  const canReview = account.role === "teacher";
   const terminology = new RegExp(`\\b(${terms.map(term => term[0]).join("|")})\\b`, "gi");
   const selected = open === null ? null : terms[open];
   const context = selected && input.split(/(?<=[.!?])\s+|\n+/).find(line => new RegExp(`\\b${selected[0]}\\b`, "i").test(line));

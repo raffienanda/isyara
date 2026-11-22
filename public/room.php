@@ -30,7 +30,7 @@ try {
     $id=hash('sha256',$room); $check=$db->prepare('SELECT expires FROM rooms WHERE id=?'); $check->execute([$id]);
     if (!$check->fetchColumn()) reject(404);
     if (in_array($action, ['candidates','propose','review'], true)) {
-        if ($account['role'] !== 'curator') reject(403);
+        if ($account['role'] !== 'teacher') reject(403);
         $db->exec('CREATE TABLE IF NOT EXISTS candidates (id INTEGER PRIMARY KEY, room TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE, term TEXT NOT NULL, dialect TEXT NOT NULL, source TEXT NOT NULL, status TEXT NOT NULL DEFAULT "Menunggu tinjauan", revision INTEGER NOT NULL DEFAULT 0, UNIQUE(room,term,dialect,source))');
         if ($action === 'propose') {
             $values = [];

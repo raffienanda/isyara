@@ -12,6 +12,8 @@ Ekstrak ZIP website langsung ke `public_html` untuk domain utama cPanel. Pastika
 
 Gunakan HTTPS, PHP 8.1 atau lebih baru dengan `pdo_sqlite`, dan direktori temporer privat yang dapat ditulis untuk ruang kelas. Setelah ekstrak, masuk dengan akun awal dan uji pengiriman satu pesan antarbrowser. Paket ini dapat dijalankan langsung oleh PHP dan aset statisnya sudah dibangun.
 
+Peran aktif adalah Siswa, Orang Tua, dan Guru. Guru dapat membuka seluruh menu, termasuk Daftar Kelas dan Kurasi Isyarat. Dasbor Guru menampilkan progres dan catatan siswa di kelas yang diajar. Pembaruan website menonaktifkan login dari peran lama dengan tetap menyimpan catatan mereka di database.
+
 ## Uji alur
 
 1. Buka Sains Isyarat, ubah jumlah potongan lingkaran, jawab kuis, lalu periksa Dasbor Pendamping.

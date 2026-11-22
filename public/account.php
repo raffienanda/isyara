@@ -37,11 +37,11 @@ try {
         $attempts = $limit->fetchColumn();
         $db->commit();
         if ($attempts > 12) accountResponse(['error' => 'Terlalu banyak percobaan. Coba lagi dalam beberapa menit.'], 429);
-        $query = $db->prepare('SELECT id,password FROM accounts WHERE username=?');
+        $query = $db->prepare('SELECT id,password,role FROM accounts WHERE username=?');
         $query->execute([strtolower(trim($username))]);
         $credential = $query->fetch();
         $hash = $credential['password'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
-        if (!password_verify($password, $hash) || !$credential) {
+        if (!password_verify($password, $hash) || !$credential || !activeAccountRole($credential['role'])) {
             accountResponse(['error' => 'Nama pengguna atau kata sandi tidak cocok.'], 401);
         }
         $db->prepare('DELETE FROM login_attempts WHERE address=?')->execute([$ip]);
@@ -87,7 +87,7 @@ try {
     }
 
     if ($action === 'school') {
-        if ($account['role'] !== 'admin') accountResponse([], 403);
+        if ($account['role'] !== 'teacher') accountResponse([], 403);
         $rows = $db->query("SELECT c.name AS classroom,a.name AS student FROM class_members m JOIN classes c ON c.id=m.class_id JOIN accounts a ON a.id=m.account_id WHERE a.role='student' ORDER BY c.name,a.name");
         accountResponse(['roster' => $rows->fetchAll()]);
     }
@@ -99,7 +99,7 @@ try {
         accountResponse(['error' => 'Akun ini tidak memiliki akses ke siswa tersebut.'], 403);
     }
     if ($action === 'save_note') {
-        if (!in_array($account['role'], ['parent','teacher','gpk','therapist'], true)) accountResponse([], 403);
+        if (!in_array($account['role'], ['parent','teacher'], true)) accountResponse([], 403);
         $note = $input['text'] ?? null;
         if (!is_string($note) || trim($note) === '' || strlen($note) > 6000) accountResponse([], 400);
         $db->prepare('INSERT INTO companion_notes (student_id,author_id,text) VALUES (?,?,?)')->execute([$student,$account['id'],trim($note)]);
