@@ -1,0 +1,16 @@
+services:
+  isyara:
+    build: .
+    container_name: isyara
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      COOKIE_SECURE: "1"
+    # Only reachable from the server itself. Cloudflare Tunnel forwards the public domain here.
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - isyara-data:/data
+
+volumes:
+  isyara-data:

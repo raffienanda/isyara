@@ -2,55 +2,24 @@ ISYARA — Sumber materi dan perangkat lunak
 
 Referensi alfabet dan contoh titik tangan
 Samuel Ady Sanjaya (2024), BISINDO Indonesian Sign Language: Alphabet Image Data, Mendeley Data v1.
-https://doi.org/10.17632/ywnjpbcz8m.1
-CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
-Perubahan untuk ISYARA: sebagian foto dipilih, diubah ukurannya, dan dikompres. Titik tangan yang terdeteksi dinormalisasi dan dipakai sebagai referensi pencocokan. Sumber tidak menyatakan dukungan terhadap ISYARA.
+https://doi.org/10.17632/ywnjpbcz8m.1 — CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+Titik tangan dari foto dataset dinormalisasi dan dipakai sebagai referensi pencocokan (alphabet.json) serta melatih model alfabet satu tangan dan dua tangan. Sumber tidak menyatakan dukungan terhadap ISYARA.
+
+Model alfabet tumpang tindih (M, N, Y)
+Dilatih dari jarak antartitik tangan pada dataset Samuel Ady Sanjaya (CC BY 4.0) dan BISINDO Hand-Sign Detection Dataset, Rhio Sutoyo (MIT):
+https://github.com/rhiosutoyo/Indonesian-Sign-Language-BISINDO-Hand-Sign-Detection-Dataset
+
+Ilustrasi tangan 3D (alfabet-3d/)
+Dirender ulang untuk ISYARA dari titik tangan dataset Samuel Ady Sanjaya (CC BY 4.0). D-kontak-v2 dan J-kelingking digambar ulang berdasarkan pose pada D5.jpg dan J4.jpg dari dataset yang sama.
+
+Kosakata gerak (gerak/, kosakata-gerak.json, model-kosakata.json)
+sigawari, WL-BISINDO-10class, https://huggingface.co/datasets/sigawari/wl-bisindo-10class — CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/). Animasi 3D dirender dari landmark tangan dataset. Model ExtraTrees dilatih dari 240 contoh tiga penutur. Untuk penggunaan nonkomersial.
 
 Pelacakan tangan dan wajah
-Google MediaPipe Tasks Vision. https://github.com/google-ai-edge/mediapipe
-Model hand_landmarker dan face_landmarker float16, distribusi resmi MediaPipe Models versi 1.
-https://developers.google.com/edge/mediapipe/solutions/vision
+Google MediaPipe Tasks Vision, model hand_landmarker dan face_landmarker. https://github.com/google-ai-edge/mediapipe (Apache 2.0)
 
-Transkripsi luring
-OpenAI Whisper Tiny (multibahasa), model kuantisasi ONNX dari Xenova.
-https://huggingface.co/Xenova/whisper-tiny
-Transformers.js 2.17.2 dan ONNX Runtime Web. Audio sesi luring hanya diproses dalam memori.
-https://github.com/huggingface/transformers.js
-
-OCR dan PDF
-Tesseract.js dan data pelatihan bahasa Indonesia.
-https://github.com/naptha/tesseract.js
-https://tessdata.projectnaptha.com/4.0.0/ind.traineddata.gz
-PDF.js — https://github.com/mozilla/pdf.js
+Ringkasan dan latihan pintar
+Google Gemini API, dipanggil dari server dengan data progres tanpa nama dan tanpa gambar.
 
 Antarmuka
-React, Lucide, dan Atkinson Hyperlegible Next. Lisensi tambahan disertakan di direktori licenses.
-Rekaman perkenalan, keluarga, dan cerita pendek: Tito Sugiharto (2026), BISINDO Video Dataset v3, https://doi.org/10.17632/f33k9w86wr.3 (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/). Video diperkecil dan dikompresi.
-10 lintasan kosakata dan referensi kamera: sigawari, wl-bisindo-10class, https://huggingface.co/datasets/sigawari/wl-bisindo-10class (CC BY-NC 4.0, https://creativecommons.org/licenses/by-nc/4.0/). Diambil dari landmarks_extracted, tiga contoh penutur per kata; dipilih koordinat dua dimensi hidung dan tangan, digambar kembali, dan diambil sebagian frame. Untuk penggunaan nonkomersial.
-model-kosakata.json adalah model ExtraTrees yang dilatih dari 240 contoh tiga penutur WL-BISINDO-10class (sigawari), termasuk pencerminan, dengan lisensi CC BY-NC 4.0 yang sama.
-Animasi 3D dalam gerak/: 30 klip render turunan dari landmark tangan WL-BISINDO-10class (sigawari), https://huggingface.co/datasets/sigawari/wl-bisindo-10class, CC BY-NC 4.0. Bentuk tangan, bahan, pencahayaan, dan kamera dirender untuk ISYARA.
-
-Ilustrasi alfabet hijau: hasil render turunan foto alfabet BISINDO Samuel Ady Sanjaya (CC BY 4.0), https://doi.org/10.17632/ywnjpbcz8m.1. Titik tangan diekstrak dan diberi bentuk serta warna baru. Foto sumber: A = A3.jpg, B = B0.jpg, C = C0.jpg, D = D0.jpg, E = E3.jpg, F = F2.jpg, G = G2.jpg, H = H0.jpg, I = I0.jpg, J = J0.jpg, K = K0.jpg, L = L0.jpg, M = M4.jpg (dua tangan, bentuk ditelusuri manual), N = N0.jpg, O = O0.jpg, P = P0.jpg, Q = Q0.jpg, R = R0.jpg, S = S0.jpg, T = T0.jpg, U = U0.jpg, V = V2.jpg, W = W4.jpg, X = X1.jpg, Y = Y0.jpg, Z = Z0.jpg.
-
-Pembaruan pose dan tampilan tiap tangan: A = A3.jpg, B = B0.jpg, D = D0.jpg, F = F2.jpg, G = G2.jpg, H = H0.jpg, K = K0.jpg, M = M4.jpg, N = N0.jpg, P = P0.jpg, Q = Q0.jpg, S = S5.jpg, T = T5.jpg, W = W4.jpg, X = X5.jpg, Y = Y0.jpg. Tangan kedua Q ditelusuri manual. Pose utama M memakai render manual M4.jpg.
-Pembaruan pengenal alfabet: 157 vektor referensi tambahan diolah dari foto pada dataset Samuel Ady Sanjaya yang sama menggunakan bingkai berpadding.
-Latihan N dan Y memakai 47 vektor tambahan dari 17 foto pada dataset yang sama, dengan kedua tangan terbaca pada variasi ukuran dan rotasi bingkai.
-Model alfabet tumpang tindih dilatih dari jarak antartitik tangan dan kelurusan jari MediaPipe pada foto dataset alfabet Samuel Ady Sanjaya (CC BY 4.0) dan dataset BISINDO Hand-Sign Detection Rhio Sutoyo (MIT): https://github.com/rhiosutoyo/Indonesian-Sign-Language-BISINDO-Hand-Sign-Detection-Dataset.
-Kelas pelatihannya adalah M, N, Y, dan huruf lain. Data yang dibundel adalah parameter model, dengan foto terpisah untuk pemeriksaan.
-Model cadangan alfabet menggunakan dua model ExtraTrees, satu untuk pose satu tangan dan satu untuk pose dua tangan. Model dilatih dari titik tangan pada foto alfabet Samuel Ady Sanjaya (CC BY 4.0), dengan variasi cermin dan rotasi kecil.
-D-kontak-v2.webp digambar ulang dengan ImageGen berdasarkan pose pada D5.jpg dari dataset Samuel Ady Sanjaya (CC BY 4.0) dan gaya ilustrasi pengguna.
-J-kelingking.webp digambar ulang dengan ImageGen berdasarkan pose pada J4.jpg dari dataset Samuel Ady Sanjaya (CC BY 4.0) dan gaya ilustrasi pengguna.
-Ilustrasi K-3d.webp: dirender ulang dari titik tangan pada K5.jpg pada dataset alfabet BISINDO Samuel Ady Sanjaya (CC BY 4.0).
-Ilustrasi A-kontak.webp mengikuti titik sentuh yang terlihat pada A3.jpg. Ilustrasi G-genggam.webp ditelusuri dari G2.jpg. Keduanya menggunakan foto sumber Samuel Ady Sanjaya (CC BY 4.0).
-Ilustrasi M-jari-rapi.webp dan Q-jari-rapi.webp: bentuk jari dirapikan berdasarkan M4.jpg dan Q0.jpg dari dataset Samuel Ady Sanjaya (CC BY 4.0).
-B-referensi.webp dan U-referensi.webp dirender berdasarkan penelusuran ruas jari dari B0.jpg dan U0.jpg pada dataset Samuel Ady Sanjaya (CC BY 4.0).
-B-sisi.webp: ilustrasi 3D yang menampilkan ujung tiga jari di sisi telunjuk berdasarkan B0.jpg, dataset Samuel Ady Sanjaya (CC BY 4.0).
-C-bagan.webp: ilustrasi 3D buatan ISYARA berdasarkan pose C pada bagan Bahasa Isyarat Indonesia Biro Hukum dan HAM Jawa Barat yang diberikan pengguna.
-G-bagan.webp, O-bagan.webp, U-bagan.webp: ilustrasi 3D yang disusun berdasarkan bagan Bahasa Isyarat Indonesia Biro Hukum dan HAM Jawa Barat yang diberikan pengguna. Gerak dari webcam untuk pose tersebut belum divalidasi.
-A-proporsi.webp sampai Z-proporsi.webp: render ulang pose rujukan di atas dengan jari lebih membulat. Titik kontak A dan B dipertahankan.
-A-seragam.webp sampai Z-seragam.webp dirender dari pose rujukan yang sama menggunakan skala, ketebalan ruas, pencahayaan dan batas gambar bersama. Peta pose terdapat pada scripts/alphabet_poses.json.
-A-pahat.webp sampai Z-pahat.webp: pose BISINDO dirender dengan material mengilap hijau. Pose L ditelusuri kembali dari L0.jpg (Samuel Ady Sanjaya, CC BY 4.0).
-Revisi D-pahat.webp: posisi sendi digambar ulang dari bagan yang diberikan pengguna. Ilustrasi menggunakan palet dan pencahayaan 3D bersama.
-D-natural.webp: kontur serta lipatan dua tangan ditelusuri manual dari D5.jpg (Samuel Ady Sanjaya, CC BY 4.0), lalu diberi volume dan pencahayaan dalam skrip render_letter_d.py.
-A-lembut.webp sampai Z-lembut.webp memakai pencahayaan dan pembulatan kontur yang seragam. Kontur serta lipatan tangan sisi kiri D dibuat ulang dari foto sumber D5.jpg.
-A-poster.webp sampai Z-poster.webp diambil dari poster abjad BISINDO yang dibuat dan diberikan oleh pengguna.
+React (MIT), Lucide (ISC), Hono (MIT), font Atkinson Hyperlegible Next (OFL) dan Bricolage Grotesque (OFL) melalui Fontsource. Background potongan kertas dibuat untuk ISYARA dengan model gambar AI. Lisensi tambahan di direktori licenses.

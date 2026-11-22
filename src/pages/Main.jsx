@@ -1,0 +1,224 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CameraLab } from "../lib/media";
+import { describeHands, fingerFeedback } from "../lib/shape";
+import { getPrefs, recordProgress } from "../api";
+import { LEVELS, TWO_HANDED, WORD_POINTS } from "../../shared/levels.js";
+import { ArrowLeft, ArrowRight, Check, Spark, go, handImg, tipFor, useAuth } from "../ui";
+
+const HOLD_FRAMES = 4;
+const HOLD_MS = 500;
+
+function wordsFor(id, query, user) {
+  if (id === "nama") {
+    const name = (user.name || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 10);
+    return name.length ? [name] : ["ISYARA"];
+  }
+  if (id === "pintar") {
+    const list = (query.get("kata") || "").toUpperCase().split(",").map(w => w.replace(/[^A-Z]/g, "")).filter(Boolean);
+    return list.length ? list.slice(0, 5) : LEVELS[0].words.slice(0, 3);
+  }
+  return (LEVELS[Number(id) - 1] || LEVELS[0]).words;
+}
+
+const clock = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+
+export function Main({ id, query }) {
+  const { user } = useAuth();
+  const level = LEVELS.find(l => String(l.n) === id);
+  const words = useMemo(() => wordsFor(id, query, user), [id, query, user]);
+  const title = level ? `Level ${level.n} · ${level.name}` : id === "nama" ? "Eja namaku" : "Latihan pintar";
+  const exit = level ? "level" : "beranda";
+
+  const [wi, setWi] = useState(0);
+  const [li, setLi] = useState(0);
+  const [phase, setPhase] = useState("main");
+  const [points, setPoints] = useState(0);
+  const [hold, setHold] = useState(0);
+  const [hint, setHint] = useState("Aktifkan kamera, lalu tirukan bentuk tangan pada contoh.");
+  const [fingers, setFingers] = useState(null);
+  const [handCount, setHandCount] = useState(0);
+  const [result, setResult] = useState({ mastered: new Set(), skipped: new Set() });
+  const [elapsed, setElapsed] = useState(0);
+  const prefs = useMemo(getPrefs, []);
+
+  const hold$ = useRef({ since: null, frames: 0, release: false, misses: 0, gap: false, lastMatch: 0 });
+  const bank = useRef(null);
+  const frame = useRef(0);
+  const started = useRef(Date.now());
+  const letterStart = useRef(Date.now());
+
+  useEffect(() => { fetch("./alphabet.json").then(r => r.json()).then(b => { bank.current = b; }).catch(() => {}); }, []);
+  useEffect(() => {
+    if (phase === "selesai") return;
+    const t = setInterval(() => setElapsed(Math.round((Date.now() - started.current) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  const word = words[wi];
+  const letter = word?.[li];
+  const nextWord = words[wi + 1];
+
+  function advance(status) {
+    const seconds = Math.round((Date.now() - letterStart.current) / 1000);
+    const okFingers = fingers?.filter(f => f.ok).length ?? 4;
+    recordProgress({ type: "huruf", letter, status, seconds, match: status === "kuasai" ? 60 + okFingers * 8 : 0 });
+    setResult(r => {
+      const mastered = new Set(r.mastered), skipped = new Set(r.skipped);
+      if (status === "kuasai") { mastered.add(letter); skipped.delete(letter); } else if (!mastered.has(letter)) skipped.add(letter);
+      return { mastered, skipped };
+    });
+    letterStart.current = Date.now();
+    hold$.current = { since: null, frames: 0, release: word[li + 1] === letter, misses: 0, gap: false, lastMatch: 0 };
+    setHold(0);
+    setFingers(null);
+    if (li + 1 < word.length) {
+      setLi(li + 1);
+      setHint(status === "kuasai" ? `${letter} cocok! Lanjut ke ${word[li + 1]}.` : `Huruf ${letter} dilewati.`);
+      return;
+    }
+    const gained = word.length * WORD_POINTS;
+    setPoints(p => p + gained);
+    recordProgress({ type: "kata", word });
+    if (wi + 1 < words.length) setPhase("kata");
+    else {
+      if (level) recordProgress({ type: "level", level: level.n });
+      setPhase("selesai");
+    }
+  }
+
+  function observe(candidate, hands, now, contactNeeded, detection) {
+    if (phase !== "main" || !letter) return;
+    if (hands !== handCount) setHandCount(hands);
+    if (hands && bank.current && ++frame.current % 3 === 0) setFingers(fingerFeedback(describeHands(detection), bank.current, letter));
+    const s = hold$.current;
+    if (s.release) {
+      s.misses = candidate === letter ? 0 : s.misses + 1;
+      if (s.misses >= 3) s.release = false;
+      setHint("Lepaskan pose sebentar, lalu peragakan lagi untuk huruf yang berulang.");
+      return;
+    }
+    if (candidate !== letter) {
+      // Keep a nearly finished hold through one momentary tracking dropout.
+      if (!candidate && hands > 0 && !contactNeeded && s.frames >= 2 && !s.gap && now - s.lastMatch < 240) { s.gap = true; return; }
+      s.since = null; s.frames = 0; s.gap = false;
+      setHold(0);
+      setHint(!hands ? "Posisikan tangan di dalam bingkai."
+        : TWO_HANDED.has(letter) && hands < 2 ? "Baru satu tangan terbaca. Perlihatkan kedua tangan dan pergelangannya."
+        : letter === "A" && contactNeeded ? "Satukan ujung kedua telunjuk dan kedua ibu jari."
+        : candidate ? `Terbaca ${candidate}. Coba bentuk ${letter} seperti contoh.`
+        : "Bentuk huruf belum terbaca. Pastikan semua jari terlihat.");
+      return;
+    }
+    s.since ??= now;
+    s.frames++;
+    s.lastMatch = now;
+    setHold(Math.round(Math.min(1, s.frames / HOLD_FRAMES, (now - s.since) / HOLD_MS) * 100));
+    setHint("Hampir! Tahan sebentar…");
+    if (s.frames >= HOLD_FRAMES && now - s.since >= HOLD_MS) advance("kuasai");
+  }
+
+  function nextWordStart() {
+    setWi(wi + 1); setLi(0); setPhase("main"); letterStart.current = Date.now();
+    hold$.current = { since: null, frames: 0, release: false, misses: 0, gap: false, lastMatch: 0 };
+    setHint("Tirukan huruf pertama.");
+  }
+  function restart() {
+    setWi(0); setLi(0); setPoints(0); setPhase("main"); setResult({ mastered: new Set(), skipped: new Set() });
+    started.current = Date.now(); letterStart.current = Date.now(); setElapsed(0);
+  }
+
+  if (phase === "selesai") {
+    const nextLevel = level && LEVELS[level.n];
+    return (
+      <div className="screen bg-selesai on-dark stack center" style={{ "--gap": "26px", padding: "48px 24px" }}>
+        <span className="eyebrow">{title}</span>
+        <h1 className="display pop accent" style={{ fontSize: "clamp(4rem, 12vw, 9rem)" }}>Hebat!</h1>
+        <p className="display" style={{ fontSize: "2.6rem" }}>+{points} poin</p>
+        <p className="muted" style={{ fontSize: "1.15rem", maxWidth: 540 }}>{words.length} kata selesai dalam {clock(elapsed)}.{nextLevel ? ` Level ${nextLevel.n} sekarang terbuka.` : ""}</p>
+        {result.mastered.size > 0 && <div className="stack center" style={{ "--gap": "10px" }}>
+          <strong>Huruf yang kamu kuasai</strong>
+          <div className="row" style={{ justifyContent: "center", "--gap": "8px" }}>
+            {[...result.mastered].sort().map(ch => <span key={ch} className="letter" style={{ width: 56, height: 60, background: "var(--krem)", color: "var(--hijau)" }}>{ch}</span>)}
+            {[...result.skipped].sort().map(ch => <span key={ch} className="letter" aria-label={ch + ", sempat dilewati"} style={{ width: 56, height: 60, background: "transparent", color: "var(--kuning)", border: "3px dashed var(--oranye)" }}>{ch}</span>)}
+          </div>
+          {result.skipped.size > 0 && <span className="small muted">Garis putus-putus = sempat dilewati. Coba lagi nanti.</span>}
+        </div>}
+        <div className="row" style={{ justifyContent: "center" }}>
+          <button className="btn btn-outline-light btn-lg" onClick={restart}>Main lagi</button>
+          {nextLevel ? <a className="btn btn-kuning btn-lg" href={"#/tangan/" + nextLevel.n}>Level {nextLevel.n} <ArrowRight /></a>
+            : <a className="btn btn-kuning btn-lg" href="#/beranda">Ke beranda <ArrowRight /></a>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={"screen" + (prefs.mirror ? " mirror-cam" : "")}>
+      <div className="split">
+        <section className="half bg-panel stack" aria-label="Contoh huruf" style={{ overflow: "hidden" }}>
+          <div className="topbar" style={{ position: "relative", zIndex: 2 }}>
+            <a className="back" href={"#/" + exit}><ArrowLeft />Keluar</a>
+            <span className="muted" style={{ fontWeight: 700 }}>{title} · Kata {wi + 1}/{words.length}</span>
+          </div>
+          <div className="grow" style={{ position: "relative", display: "grid", placeItems: "center", minHeight: 300 }}>
+            <span className="big-letter" aria-hidden="true">{letter}</span>
+            <img key={letter} className={"hand-img pop" + (user.hand === "kiri" ? " flip" : "")} src={handImg(letter)} alt={"Contoh tangan 3D untuk huruf " + letter} />
+            <span className="display" style={{ position: "absolute", left: 32, top: 8, display: "grid", placeItems: "center", width: 92, height: 92, borderRadius: 28, background: "var(--hijau)", color: "var(--krem)", fontSize: "3.6rem" }}>{letter}</span>
+            {TWO_HANDED.has(letter) && <span className="chip chip-peach" style={{ position: "absolute", left: 32, top: 112 }}>Dua tangan</span>}
+          </div>
+          <p className="muted" style={{ textAlign: "center", maxWidth: 460, margin: "0 auto", padding: "0 24px", position: "relative" }}>{tipFor(letter)}</p>
+          <div className="stack center" style={{ padding: "22px 24px 30px", "--gap": "16px", position: "relative" }}>
+            <div className="word-row" aria-label={`Kata ${word}, huruf ${li + 1} dari ${word.length}`}>
+              {Array.from(word).map((ch, i) => <span key={i} className={"ch" + (i < li ? " done" : i === li ? " now" : "")}>{ch}<i /></span>)}
+            </div>
+            <button className="btn btn-outline" onClick={() => advance("lewati")}>Lewati huruf</button>
+          </div>
+        </section>
+
+        <section className="half" aria-label="Kamera" style={{ minHeight: 520 }}>
+          <CameraLab alphabet autoStart expectedLetter={letter} onLetterFrame={observe} />
+          <div className="overlay-top on-dark">
+            <span className="chip chip-glass">{clock(elapsed)}</span>
+            <span className="display" style={{ fontSize: "1.6rem", color: "var(--kuning)" }}>{points} poin</span>
+            <span className="chip chip-glass small">Diproses di perangkat</span>
+          </div>
+          <div className="overlay-bottom">
+            <div className="row between" style={{ padding: "14px 20px", borderRadius: 24, background: "var(--krem)", flexWrap: "nowrap" }}>
+              <span role="status" style={{ fontWeight: 700 }}>{hint}</span>
+              <span className="display" style={{ fontSize: "1.6rem", color: "var(--hijau)" }}>{hold}%</span>
+            </div>
+            <div className="progress" style={{ background: "rgba(255,246,229,.2)" }} aria-hidden="true"><span style={{ width: hold + "%", background: hold > 60 ? "var(--neon)" : "var(--kuning)" }} /></div>
+            {fingers && handCount > 0 && <>
+              <span className="chip" style={{ alignSelf: "flex-start", background: "var(--neon)", color: "var(--tua)" }}><Spark size={16} />Pelatih AI · posisi tiap jari (perkiraan)</span>
+              <div className="fingers">
+                {fingers.map(f => <span key={f.name} className={f.ok ? "" : "fix"}>{f.name}<small>{f.ok ? "Pas" : "Betulkan"}</small></span>)}
+              </div>
+            </>}
+          </div>
+        </section>
+      </div>
+
+      {phase === "kata" && (
+        <div role="dialog" aria-modal="true" aria-labelledby="kata-selesai" className="bg-hijau on-dark stack center" style={{ position: "fixed", inset: 0, zIndex: 20, "--gap": "26px", padding: 24 }}>
+          <span style={{ display: "grid", placeItems: "center", width: 88, height: 88, borderRadius: "50%", background: "var(--kuning)", color: "var(--tua)" }} className="pop"><Check size={48} /></span>
+          <h2 id="kata-selesai" className="display h-1">{word} selesai! <span className="accent">+{word.length * WORD_POINTS}</span></h2>
+          <span className="eyebrow">Kata berikutnya</span>
+          <p className="display accent" style={{ fontSize: "clamp(4rem, 12vw, 9rem)", letterSpacing: 12 }}>{nextWord}</p>
+          <div className="row" style={{ justifyContent: "center", "--gap": "12px" }}>
+            {Array.from(nextWord).map((ch, i) => (
+              <span key={i} style={{ width: 104, height: 104, borderRadius: 26, background: "var(--krem)", display: "grid", placeItems: "center" }}>
+                <img src={handImg(ch)} alt={"Huruf " + ch} width="88" height="88" style={{ objectFit: "contain" }} />
+              </span>
+            ))}
+          </div>
+          <div className="stack" style={{ width: "100%", maxWidth: 460, "--gap": "8px" }}>
+            <div className="row between small" style={{ fontWeight: 700 }}><span>Kata {wi + 2} dari {words.length}</span><span>{points} poin</span></div>
+            <div className="progress"><span style={{ width: ((wi + 1) / words.length) * 100 + "%", background: "var(--kuning)" }} /></div>
+          </div>
+          <button className="btn btn-cream btn-lg" autoFocus onClick={nextWordStart}>Lanjut <ArrowRight /></button>
+          <button className="back" onClick={() => go(exit)}>Istirahat dulu</button>
+        </div>
+      )}
+    </div>
+  );
+}
