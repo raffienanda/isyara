@@ -36,11 +36,10 @@ Butuh Node.js 22.13 atau lebih baru.
 ```bash
 npm install
 cp .env.example .env      # opsional: isi GEMINI_API_KEY dan DEMO_PASSWORD
-npm run seed              # akun demo: rina (pendamping), budi, sari, ayu, dimas (pelajar)
 npm run dev               # buka http://127.0.0.1:5173
 ```
 
-Kata sandi akun demo diambil dari `DEMO_PASSWORD` di `.env`, atau nilai bawaan di [server/seed.js](server/seed.js). Kode kelas demo dicetak saat `npm run seed`.
+Di halaman Masuk ada tombol **Coba langsung**: sekali klik masuk sebagai pelajar demo (Budi) atau pendamping demo (Bu Rina), tanpa kata sandi. Data demo dibuat otomatis. Akun demo: `demo.rina` (pendamping), `demo.budi`, `demo.sari`, `demo.ayu`, `demo.dimas` (pelajar), kode Kelas 4A `4A27`. Nama pengguna berawalan `demo.` tidak bisa dipakai untuk daftar biasa, jadi tombol demo tidak pernah membuka akun orang lain. Matikan tombol demo dengan `DEMO_LOGIN=0` di `.env`.
 
 Versi produksi di laptop: `npm run build && npm start`, lalu buka http://127.0.0.1:8787.
 
@@ -52,7 +51,6 @@ Kamera hanya jalan di `localhost`/`127.0.0.1` atau di alamat HTTPS.
 git clone -b naufal-dev https://github.com/raffienanda/isyara.git && cd isyara
 cp .env.example .env && nano .env      # isi GEMINI_API_KEY
 docker compose up -d --build
-docker compose exec isyara node server/seed.js   # opsional: data demo untuk juri
 ```
 
 Aplikasi hanya mendengarkan di `127.0.0.1:8787`. Arahkan Cloudflare Tunnel ke sana, misalnya di `~/.cloudflared/config.yml`:

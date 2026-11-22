@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { useSwap } from "../anim";
 import { api } from "../api";
 import { Brand, LetterMap, Loading, Spark, go, relTime, useAuth, useLoad } from "../ui";
 
@@ -114,6 +115,8 @@ function StudentPanel({ id, groupId, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
+  const summaryRef = useRef(null);
+  useSwap(summaryRef, detail.data?.summary?.created_at ?? "kosong", { y: 18, opacity: 0, scale: 0.98 });
   if (!detail.data) return <section className="card" style={{ flex: "999 1 600px" }}>{detail.error ? <p className="alert alert-error">{detail.error}</p> : <p className="muted">Memuat…</p>}</section>;
   const { student, stats, notes, summary } = detail.data;
   async function makeSummary() {
@@ -139,7 +142,7 @@ function StudentPanel({ id, groupId, onChanged }) {
           : stats.daysSinceActive >= 3 && <span className="chip chip-peach">Belum latihan {stats.daysSinceActive} hari</span>}
       </div>
 
-      <div className="card-tua stack" style={{ "--gap": "14px", borderRadius: 28 }}>
+      <div ref={summaryRef} className="card-tua stack" style={{ "--gap": "14px", borderRadius: 28 }}>
         <div className="row between">
           <span className="row" style={{ "--gap": "8px", color: "var(--neon)", fontWeight: 700 }}><Spark size={20} />RINGKASAN AI · MINGGU INI</span>
           <button className="btn btn-neon btn-sm no-print" onClick={makeSummary} disabled={busy}>{busy ? "Membuat ringkasan…" : summary ? "Perbarui ringkasan" : "Buat ringkasan AI"}</button>

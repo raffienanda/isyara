@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { applyPrefs } from "./api";
+import { usePageIn } from "./anim";
 import { AuthProvider, Loading, useAuth, useRoute } from "./ui";
 import { Intro, Lupa, Masuk, Tentang } from "./pages/Umum";
 import { Beranda, KameraMasalah, Kenalan, PilihLevel, SiapKamera, Tangan } from "./pages/Pelajar";
@@ -14,6 +15,13 @@ applyPrefs();
 function Redirect({ to }) {
   React.useEffect(() => { location.replace("#/" + to); }, [to]);
   return null;
+}
+
+function PageIn({ children }) {
+  const ref = React.useRef(null);
+  const { parts, query } = useRoute();
+  usePageIn(ref, parts.join("/") + "?" + query.toString());
+  return <div ref={ref}>{children}</div>;
 }
 
 function Router() {
@@ -54,7 +62,7 @@ function Router() {
 createRoot(document.getElementById("root")).render(
   <AuthProvider>
     <a className="skip" href="#isi" onClick={e => { e.preventDefault(); document.getElementById("isi")?.focus(); }}>Lewati ke isi</a>
-    <Router />
+    <PageIn><Router /></PageIn>
   </AuthProvider>,
 );
 

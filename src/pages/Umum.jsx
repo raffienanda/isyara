@@ -1,33 +1,105 @@
-import React, { useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../api";
+import { gsap, reduced } from "../anim";
 import { ArrowRight, Back, Brand, Lock, go, useAuth } from "../ui";
+
+const INTRO_HANDS = [
+  { ch: "A", style: { left: "2%", top: "13%", width: 250 }, rot: -14, from: -1, depth: 30 },
+  { ch: "C", style: { right: "4%", top: "16%", width: 190 }, rot: 12, from: 1, depth: 18 },
+  { ch: "L", style: { left: "9%", bottom: "6%", width: 180 }, rot: 10, from: -1, depth: 22 },
+  { ch: "V", style: { right: "6%", bottom: "5%", width: 250 }, rot: -10, from: 1, depth: 34 },
+];
 
 export function Intro() {
   const { user } = useAuth();
   const home = user ? (user.role === "pelajar" ? "beranda" : "kelas") : "masuk";
+  const root = useRef(null);
+  useLayoutEffect(() => {
+    if (reduced()) return;
+    const ctx = gsap.context(() => {
+      const hands = gsap.utils.toArray(".intro-hand");
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from(".intro-line", { yPercent: 110, opacity: 0, duration: 0.9, stagger: 0.12 })
+        .from(".intro-fade", { y: 20, opacity: 0, duration: 0.6, stagger: 0.08 }, "-=0.5")
+        .from(hands, { x: i => INTRO_HANDS[i].from * 320, rotate: i => INTRO_HANDS[i].from * 60, opacity: 0, duration: 1.1, ease: "back.out(1.4)", stagger: 0.1 }, 0.1);
+      hands.forEach((el, i) => gsap.to(el.firstChild, { y: -16, rotate: "+=4", duration: 2.6 + i * 0.4, ease: "sine.inOut", yoyo: true, repeat: -1, delay: i * 0.3 }));
+      const movers = hands.map((el, i) => ({ x: gsap.quickTo(el, "x", { duration: 0.8 }), y: gsap.quickTo(el, "y", { duration: 0.8 }), d: INTRO_HANDS[i].depth }));
+      const onMove = e => {
+        const dx = e.clientX / innerWidth - 0.5, dy = e.clientY / innerHeight - 0.5;
+        movers.forEach(m => { m.x(-dx * m.d); m.y(-dy * m.d); });
+      };
+      window.addEventListener("pointermove", onMove);
+      return () => window.removeEventListener("pointermove", onMove);
+    }, root);
+    return () => ctx.revert();
+  }, []);
   return (
-    <div className="screen bg-intro on-dark" style={{ position: "relative", overflow: "hidden" }}>
-      <img className="float" src="./alfabet-3d/A-render.webp" alt="" aria-hidden="true" style={{ position: "absolute", left: 30, top: 110, width: 260, "--r": "-14deg", transform: "rotate(-14deg)" }} />
-      <img className="float" src="./alfabet-3d/V-render.webp" alt="" aria-hidden="true" style={{ position: "absolute", right: 60, bottom: 40, width: 260, "--r": "-10deg", transform: "rotate(-10deg)", animationDelay: "1.5s" }} />
-      <header className="topbar" style={{ position: "relative", zIndex: 2 }}>
+    <div ref={root} data-manual className="screen bg-intro on-dark" style={{ position: "relative", overflow: "hidden" }}>
+      {INTRO_HANDS.map(h => (
+        <span key={h.ch} className="intro-hand" aria-hidden="true" style={{ position: "absolute", ...h.style, zIndex: 1 }}>
+          <img src={`./alfabet-3d/${h.ch}-render.webp`} alt="" style={{ width: "100%", transform: `rotate(${h.rot}deg)`, filter: "drop-shadow(0 18px 24px rgba(21,56,42,.35))" }} />
+        </span>
+      ))}
+      <header className="topbar intro-fade" style={{ position: "relative", zIndex: 2 }}>
         <a href="#/tentang" style={{ fontWeight: 700, textDecoration: "none" }}>Tentang</a>
         <Brand light />
         <a className="btn btn-cream" href={"#/" + (user ? home : "masuk?tab=masuk")}>{user ? "Buka ISYARA" : "Masuk"}</a>
       </header>
       <main id="isi" className="stack center grow" style={{ "--gap": "26px", position: "relative", zIndex: 2, padding: "24px 24px 100px" }}>
-        <span className="chip chip-glass">BISINDO · Bahasa Isyarat Indonesia</span>
-        <h1 className="display h-hero" style={{ maxWidth: 900 }}>Eja jari BISINDO<br /><span className="accent">pakai tanganmu.</span></h1>
-        <p style={{ fontSize: "1.2rem", maxWidth: 560, color: "#E4F3E9" }}>Lihat tangan 3D, tirukan bentuknya di depan webcam, dan hurufnya langsung muncul di layar.</p>
-        <a className="btn btn-cream btn-lg" href={"#/" + home}>Ayo mulai <ArrowRight /></a>
-        {!user && <a href="#/masuk?peran=pendamping" style={{ fontWeight: 700 }}>Saya guru atau orang tua</a>}
-        <ul className="row" aria-label="Keunggulan ISYARA" style={{ listStyle: "none", padding: 0, margin: 0, justifyContent: "center" }}>
+        <span className="chip chip-glass intro-fade">BISINDO · Bahasa Isyarat Indonesia</span>
+        <h1 className="display h-hero" style={{ maxWidth: 900 }}>
+          <span style={{ display: "block", overflow: "hidden", paddingBottom: 6 }}><span className="intro-line" style={{ display: "inline-block" }}>Eja jari BISINDO</span></span>
+          <span style={{ display: "block", overflow: "hidden", paddingBottom: 10 }}><span className="intro-line accent" style={{ display: "inline-block" }}>pakai tanganmu.</span></span>
+        </h1>
+        <p className="intro-fade" style={{ fontSize: "1.2rem", maxWidth: 560, color: "#E4F3E9" }}>Lihat tangan 3D, tirukan bentuknya di depan webcam, dan hurufnya langsung muncul di layar.</p>
+        <div className="row intro-fade" style={{ justifyContent: "center" }}>
+          <a className="btn btn-cream btn-lg" href={"#/" + home}>Ayo mulai <ArrowRight /></a>
+          {!user && <a className="btn btn-outline-light btn-lg" href="#/masuk?tab=masuk">Coba demo</a>}
+        </div>
+        {!user && <a className="intro-fade" href="#/masuk?peran=pendamping" style={{ fontWeight: 700 }}>Saya guru atau orang tua</a>}
+        <ul className="row intro-fade" aria-label="Keunggulan ISYARA" style={{ listStyle: "none", padding: 0, margin: 0, justifyContent: "center" }}>
           {["Pelatih AI per jari", "Ringkasan AI untuk pendamping", "Bisa tanpa internet", "Satu kelas belajar bersama"].map(t => <li key={t} className="chip chip-dark">{t}</li>)}
         </ul>
       </main>
-      <footer className="row center" style={{ position: "relative", zIndex: 2, padding: "0 24px 26px" }}>
+      <footer className="row center intro-fade" style={{ position: "relative", zIndex: 2, padding: "0 24px 26px" }}>
         <p className="chip" style={{ background: "var(--tua)", color: "#E4F3E9", fontWeight: 400 }}><Lock /> Kamera diproses di perangkatmu. Tidak ada video yang dikirim atau disimpan.</p>
       </footer>
     </div>
+  );
+}
+
+/* One click into a ready-made demo account, so a demo or the judges never type a password. */
+function DemoQuick() {
+  const { setUser } = useAuth();
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => { api("/demo").then(d => setEnabled(d.enabled)).catch(() => {}); }, []);
+  if (!enabled) return null;
+  async function enter(as) {
+    setBusy(as); setError("");
+    try {
+      const { user } = await api("/demo", { method: "POST", body: { as } });
+      setUser(user);
+      go(as === "pelajar" ? "beranda" : "kelas");
+    } catch (e) { setError(e.message); setBusy(""); }
+  }
+  return (
+    <section aria-labelledby="demo-h" className="stack" style={{ width: "100%", maxWidth: 520, padding: 22, borderRadius: 32, background: "var(--hijau)", color: "var(--krem)", "--gap": "14px" }}>
+      <div className="row between" style={{ "--gap": "8px" }}>
+        <h2 id="demo-h" className="display" style={{ fontSize: "1.5rem" }}>Coba langsung</h2>
+        <span className="chip chip-kuning">Akun demo · tanpa sandi</span>
+      </div>
+      <div className="grid" style={{ "--min": "260px", "--gap": "10px" }}>
+        <button className="btn btn-cream btn-lg" disabled={Boolean(busy)} onClick={() => enter("pelajar")} style={{ fontSize: "1.1rem" }}>
+          <img src="./alfabet-3d/U-render.webp" alt="" width="34" height="34" style={{ objectFit: "contain" }} />{busy === "pelajar" ? "Masuk…" : "Pelajar (Budi)"}
+        </button>
+        <button className="btn btn-kuning btn-lg" disabled={Boolean(busy)} onClick={() => enter("pendamping")} style={{ fontSize: "1.1rem" }}>
+          <img src="./alfabet-3d/V-render.webp" alt="" width="34" height="34" style={{ objectFit: "contain" }} />{busy === "pendamping" ? "Masuk…" : "Pendamping (Bu Rina)"}
+        </button>
+      </div>
+      {error && <p className="alert alert-error" role="alert">{error}</p>}
+    </section>
   );
 }
 
@@ -54,7 +126,8 @@ export function Masuk({ query }) {
   return (
     <div className="screen bg-krem">
       <header className="topbar"><Back to="">Kembali</Back><Brand /><span style={{ width: 90 }} /></header>
-      <main id="isi" className="row center grow" style={{ padding: "8px 24px 48px" }}>
+      <main id="isi" className="stack center grow" style={{ padding: "8px 24px 48px", "--gap": "20px" }}>
+        <DemoQuick />
         <form onSubmit={submit} className="card stack" style={{ width: "100%", maxWidth: 520, "--gap": "18px", boxShadow: "0 20px 60px rgba(21,56,42,.10)", borderRadius: 36 }}>
           <div className="seg" role="tablist" aria-label="Pilih daftar atau masuk">
             <button type="button" role="tab" aria-selected={daftar} onClick={() => { setMode("daftar"); setError(""); }}>Daftar</button>

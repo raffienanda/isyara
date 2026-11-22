@@ -109,7 +109,7 @@ export function LetterMap({ mastered = [], skipped = [], size = 48, height = 50 
 
 export function Loading({ error, onRetry, dark }) {
   return (
-    <div className={"screen center" + (dark ? " bg-hijau on-dark" : " bg-krem")} style={{ gap: 16 }}>
+    <div data-loading={error ? undefined : ""} className={"screen center" + (dark ? " bg-hijau on-dark" : " bg-krem")} style={{ gap: 16 }}>
       {error ? <>
         <p className="alert alert-error">{error}</p>
         {onRetry && <button className="btn btn-primary" onClick={onRetry}>Coba lagi</button>}

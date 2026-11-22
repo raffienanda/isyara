@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { CameraLab } from "../lib/media";
+import { useSwap } from "../anim";
 import { api, getPrefs, recordProgress, setPrefs } from "../api";
 import { ALPHABET, GERAK, TWO_HANDED } from "../../shared/levels.js";
 import { Back, LetterMap, Loading, gerakVideo, handImg, tipFor, useAuth, useLoad } from "../ui";
@@ -21,6 +22,8 @@ export function Kamus() {
   const progress = useLoad(user?.role === "pelajar" ? "/progres" : "/saya");
   const [picked, setPicked] = useState("A");
   const [mirror, setMirror] = useState(user?.hand === "kiri");
+  const picture = useRef(null);
+  useSwap(picture, picked, { scale: 0.5, rotate: -18, opacity: 0 });
   const mastered = progress.data?.stats?.mastered || [];
   const home = user?.role === "pendamping" ? "kelas" : "beranda";
   return (
@@ -47,7 +50,7 @@ export function Kamus() {
             <span className="chip chip-mint">{TWO_HANDED.has(picked) ? "Dua tangan" : "Satu tangan"}</span>
           </div>
           <div style={{ height: 300, borderRadius: 32, background: "var(--mint)", display: "grid", placeItems: "center" }}>
-            <img src={handImg(picked)} alt={"Tangan 3D membentuk huruf " + picked + " dalam BISINDO"} width="270" height="270" style={{ objectFit: "contain", transform: mirror ? "scaleX(-1)" : undefined }} />
+            <span ref={picture} style={{ display: "grid" }}><img src={handImg(picked)} alt={"Tangan 3D membentuk huruf " + picked + " dalam BISINDO"} width="270" height="270" style={{ objectFit: "contain", transform: mirror ? "scaleX(-1)" : undefined }} /></span>
           </div>
           <p className="muted">{tipFor(picked)}</p>
           <div className="row">

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { burst, countUp, gsap, rain, reduced, useSwap } from "../anim";
 import { CameraLab } from "../lib/media";
 import { describeHands, fingerFeedback } from "../lib/shape";
 import { getPrefs, recordProgress } from "../api";
@@ -58,6 +59,46 @@ export function Main({ id, query }) {
   const letter = word?.[li];
   const nextWord = words[wi + 1];
 
+  const handWrap = useRef(null);
+  const row = useRef(null);
+  const flashRef = useRef(null);
+  const dialogRef = useRef(null);
+  const finishRef = useRef(null);
+  const [flash, setFlash] = useState(null);
+  useSwap(handWrap, wi + ":" + li);
+  useLayoutEffect(() => {
+    const done = row.current?.children[li - 1];
+    if (!done || reduced()) return;
+    gsap.fromTo(done, { scale: 1.7, y: -14 }, { scale: 1, y: 0, duration: 0.55, ease: "back.out(3)" });
+  }, [li]);
+  useLayoutEffect(() => {
+    if (!flash || !flashRef.current || reduced()) return;
+    const tl = gsap.timeline()
+      .fromTo(flashRef.current, { scale: 0.3, opacity: 0, rotate: -20 }, { scale: 1, opacity: 1, rotate: 0, duration: 0.35, ease: "back.out(2.2)" })
+      .to(flashRef.current, { scale: 1.15, opacity: 0, duration: 0.35, delay: 0.35 });
+    return () => tl.kill();
+  }, [flash]);
+  useLayoutEffect(() => {
+    if (phase !== "kata" || !dialogRef.current || reduced()) return;
+    const q = gsap.utils.selector(dialogRef);
+    const tl = gsap.timeline({ defaults: { ease: "back.out(1.8)" } })
+      .from(dialogRef.current, { opacity: 0, duration: 0.25, ease: "power1.out" })
+      .from(q(".k-check"), { scale: 0, rotate: -120, duration: 0.5 })
+      .from(q(".k-title"), { y: 30, opacity: 0, duration: 0.4 }, "-=0.2")
+      .from(q(".k-next span"), { y: 80, opacity: 0, rotate: () => gsap.utils.random(-25, 25), duration: 0.5, stagger: 0.07 }, "-=0.1")
+      .from(q(".k-tile"), { scale: 0, duration: 0.4, stagger: 0.06 }, "-=0.3")
+      .from(q(".k-rest"), { y: 16, opacity: 0, duration: 0.3, stagger: 0.06 }, "-=0.2");
+    burst(q(".k-check")[0], 26);
+    return () => tl.kill();
+  }, [phase]);
+  useEffect(() => {
+    if (phase !== "selesai") return;
+    const stop = rain();
+    countUp(finishRef.current, points, 1.6);
+    return stop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   function advance(status) {
     const seconds = Math.round((Date.now() - letterStart.current) / 1000);
     const okFingers = fingers?.filter(f => f.ok).length ?? 4;
@@ -114,7 +155,11 @@ export function Main({ id, query }) {
     s.lastMatch = now;
     setHold(Math.round(Math.min(1, s.frames / HOLD_FRAMES, (now - s.since) / HOLD_MS) * 100));
     setHint("Hampir! Tahan sebentar…");
-    if (s.frames >= HOLD_FRAMES && now - s.since >= HOLD_MS) advance("kuasai");
+    if (s.frames >= HOLD_FRAMES && now - s.since >= HOLD_MS) {
+      burst(handWrap.current);
+      setFlash({ letter, n: Date.now() });
+      advance("kuasai");
+    }
   }
 
   function nextWordStart() {
@@ -132,8 +177,8 @@ export function Main({ id, query }) {
     return (
       <div className="screen bg-selesai on-dark stack center" style={{ "--gap": "26px", padding: "48px 24px" }}>
         <span className="eyebrow">{title}</span>
-        <h1 className="display pop accent" style={{ fontSize: "clamp(4rem, 12vw, 9rem)" }}>Hebat!</h1>
-        <p className="display" style={{ fontSize: "2.6rem" }}>+{points} poin</p>
+        <h1 className="display accent" style={{ fontSize: "clamp(4rem, 12vw, 9rem)" }}>Hebat!</h1>
+        <p className="display" style={{ fontSize: "2.6rem" }}>+<span ref={finishRef}>{points}</span> poin</p>
         <p className="muted" style={{ fontSize: "1.15rem", maxWidth: 540 }}>{words.length} kata selesai dalam {clock(elapsed)}.{nextLevel ? ` Level ${nextLevel.n} sekarang terbuka.` : ""}</p>
         {result.mastered.size > 0 && <div className="stack center" style={{ "--gap": "10px" }}>
           <strong>Huruf yang kamu kuasai</strong>
@@ -162,13 +207,15 @@ export function Main({ id, query }) {
           </div>
           <div className="grow" style={{ position: "relative", display: "grid", placeItems: "center", minHeight: 300 }}>
             <span className="big-letter" aria-hidden="true">{letter}</span>
-            <img key={letter} className={"hand-img pop" + (user.hand === "kiri" ? " flip" : "")} src={handImg(letter)} alt={"Contoh tangan 3D untuk huruf " + letter} />
+            <span ref={handWrap} style={{ position: "relative", display: "grid", placeItems: "center", width: "min(420px, 80%)" }}>
+              <img className={"hand-img" + (user.hand === "kiri" ? " flip" : "")} style={{ width: "100%" }} src={handImg(letter)} alt={"Contoh tangan 3D untuk huruf " + letter} />
+            </span>
             <span className="display" style={{ position: "absolute", left: 32, top: 8, display: "grid", placeItems: "center", width: 92, height: 92, borderRadius: 28, background: "var(--hijau)", color: "var(--krem)", fontSize: "3.6rem" }}>{letter}</span>
             {TWO_HANDED.has(letter) && <span className="chip chip-peach" style={{ position: "absolute", left: 32, top: 112 }}>Dua tangan</span>}
           </div>
           <p className="muted" style={{ textAlign: "center", maxWidth: 460, margin: "0 auto", padding: "0 24px", position: "relative" }}>{tipFor(letter)}</p>
           <div className="stack center" style={{ padding: "22px 24px 30px", "--gap": "16px", position: "relative" }}>
-            <div className="word-row" aria-label={`Kata ${word}, huruf ${li + 1} dari ${word.length}`}>
+            <div ref={row} className="word-row" aria-label={`Kata ${word}, huruf ${li + 1} dari ${word.length}`}>
               {Array.from(word).map((ch, i) => <span key={i} className={"ch" + (i < li ? " done" : i === li ? " now" : "")}>{ch}<i /></span>)}
             </div>
             <button className="btn btn-outline" onClick={() => advance("lewati")}>Lewati huruf</button>
@@ -177,6 +224,12 @@ export function Main({ id, query }) {
 
         <section className="half" aria-label="Kamera" style={{ minHeight: 520 }}>
           <CameraLab alphabet autoStart expectedLetter={letter} onLetterFrame={observe} />
+          <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", transition: "box-shadow .15s ease", boxShadow: `inset 0 0 0 ${Math.round(hold / 100 * 10)}px rgba(112,255,210,${(hold / 100).toFixed(2)})` }} />
+          {flash && (
+            <div key={flash.n} ref={flashRef} aria-hidden="true" style={{ position: "absolute", left: "50%", top: "42%", zIndex: 4, marginLeft: -90, marginTop: -90, width: 180, height: 180, borderRadius: "50%", background: "var(--neon)", color: "var(--tua)", display: "grid", placeItems: "center", opacity: 0, pointerEvents: "none" }}>
+              <span className="display" style={{ fontSize: "4.4rem", display: "flex", alignItems: "center", gap: 6 }}>{flash.letter}<Check size={54} /></span>
+            </div>
+          )}
           <div className="overlay-top on-dark">
             <span className="chip chip-glass">{clock(elapsed)}</span>
             <span className="display" style={{ fontSize: "1.6rem", color: "var(--kuning)" }}>{points} poin</span>
@@ -199,24 +252,26 @@ export function Main({ id, query }) {
       </div>
 
       {phase === "kata" && (
-        <div role="dialog" aria-modal="true" aria-labelledby="kata-selesai" className="bg-hijau on-dark stack center" style={{ position: "fixed", inset: 0, zIndex: 20, "--gap": "26px", padding: 24 }}>
-          <span style={{ display: "grid", placeItems: "center", width: 88, height: 88, borderRadius: "50%", background: "var(--kuning)", color: "var(--tua)" }} className="pop"><Check size={48} /></span>
-          <h2 id="kata-selesai" className="display h-1">{word} selesai! <span className="accent">+{word.length * WORD_POINTS}</span></h2>
-          <span className="eyebrow">Kata berikutnya</span>
-          <p className="display accent" style={{ fontSize: "clamp(4rem, 12vw, 9rem)", letterSpacing: 12 }}>{nextWord}</p>
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="kata-selesai" className="bg-hijau on-dark stack center" style={{ position: "fixed", inset: 0, zIndex: 20, "--gap": "26px", padding: 24 }}>
+          <span className="k-check" style={{ display: "grid", placeItems: "center", width: 88, height: 88, borderRadius: "50%", background: "var(--kuning)", color: "var(--tua)" }}><Check size={48} /></span>
+          <h2 id="kata-selesai" className="display h-1 k-title">{word} selesai! <span className="accent">+{word.length * WORD_POINTS}</span></h2>
+          <span className="eyebrow k-rest">Kata berikutnya</span>
+          <p className="display accent k-next" aria-label={nextWord} style={{ fontSize: "clamp(4rem, 12vw, 9rem)", letterSpacing: 12 }}>
+            {Array.from(nextWord).map((ch, i) => <span key={i} aria-hidden="true" style={{ display: "inline-block" }}>{ch}</span>)}
+          </p>
           <div className="row" style={{ justifyContent: "center", "--gap": "12px" }}>
             {Array.from(nextWord).map((ch, i) => (
-              <span key={i} style={{ width: 104, height: 104, borderRadius: 26, background: "var(--krem)", display: "grid", placeItems: "center" }}>
+              <span key={i} className="k-tile" style={{ width: 104, height: 104, borderRadius: 26, background: "var(--krem)", display: "grid", placeItems: "center" }}>
                 <img src={handImg(ch)} alt={"Huruf " + ch} width="88" height="88" style={{ objectFit: "contain" }} />
               </span>
             ))}
           </div>
-          <div className="stack" style={{ width: "100%", maxWidth: 460, "--gap": "8px" }}>
+          <div className="stack k-rest" style={{ width: "100%", maxWidth: 460, "--gap": "8px" }}>
             <div className="row between small" style={{ fontWeight: 700 }}><span>Kata {wi + 2} dari {words.length}</span><span>{points} poin</span></div>
             <div className="progress"><span style={{ width: ((wi + 1) / words.length) * 100 + "%", background: "var(--kuning)" }} /></div>
           </div>
-          <button className="btn btn-cream btn-lg" autoFocus onClick={nextWordStart}>Lanjut <ArrowRight /></button>
-          <button className="back" onClick={() => go(exit)}>Istirahat dulu</button>
+          <button className="btn btn-cream btn-lg k-rest" autoFocus onClick={nextWordStart}>Lanjut <ArrowRight /></button>
+          <button className="back k-rest" onClick={() => go(exit)}>Istirahat dulu</button>
         </div>
       )}
     </div>

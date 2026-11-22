@@ -5,6 +5,10 @@ import { all, one, run, transaction, hashPassword, checkPassword, newCode, publi
 import { studentSummary, notesFor, groupsOfStudent, canManageStudent } from "./stats.js";
 import { summarize, smartPractice } from "./ai.js";
 import { ALPHABET, LEVELS, GERAK, WORD_POINTS } from "../shared/levels.js";
+import { DEMO, seedDemo } from "./seed.js";
+
+// One-click demo login is on by default for the competition. Set DEMO_LOGIN=0 to turn it off.
+const demoEnabled = process.env.DEMO_LOGIN !== "0";
 
 const COOKIE = "isyara_sesi";
 const SESSION_DAYS = 30;
@@ -81,6 +85,7 @@ api.post("/daftar", async c => {
   const role = d.role === "pendamping" ? "pendamping" : "pelajar";
   if (!name) fail(400, "Isi nama panggilan.");
   if (!/^[a-z0-9._-]{3,30}$/.test(username)) fail(400, "Nama pengguna 3–30 karakter: huruf kecil, angka, titik, atau garis bawah.");
+  if (username.startsWith("demo.")) fail(400, "Nama pengguna yang diawali \"demo.\" khusus untuk akun demo. Pilih nama lain.");
   if (password.length < 6 || password.length > 128) fail(400, "Kata sandi minimal 6 karakter.");
   if (one("SELECT 1 FROM users WHERE username = ?", username)) fail(409, "Nama pengguna sudah dipakai. Coba yang lain.");
   const user = transaction(() => {
@@ -98,6 +103,18 @@ api.post("/masuk", async c => {
   const d = await body(c);
   const user = one("SELECT * FROM users WHERE username = ?", text(d.username, 30).toLowerCase());
   if (!user || typeof d.password !== "string" || !checkPassword(d.password, user.pass)) fail(401, "Nama pengguna atau kata sandi tidak cocok.");
+  startSession(c, user.id);
+  return c.json({ user: publicUser(user) });
+});
+
+api.get("/demo", c => c.json({ enabled: demoEnabled }));
+
+api.post("/demo", async c => {
+  if (!demoEnabled) fail(404, "Mode demo tidak aktif.");
+  limit(c, "demo", 40, 600000);
+  const as = (await body(c)).as === "pendamping" ? "pendamping" : "pelajar";
+  seedDemo();
+  const user = one("SELECT * FROM users WHERE username = ?", DEMO[as]);
   startSession(c, user.id);
   return c.json({ user: publicUser(user) });
 });

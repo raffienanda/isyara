@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { gsap, reduced, useSwap } from "../anim";
 import { api } from "../api";
 import { LEVELS, unlockedLevel } from "../../shared/levels.js";
 import { ArrowRight, Back, Brand, Check, Loading, Lock, Spark, go, handImg, useAuth, useLoad } from "../ui";
@@ -8,6 +9,8 @@ export function Kenalan() {
   const [step, setStep] = useState(0);
   const [about, setAbout] = useState(user.about || "keluarga");
   const [goal, setGoal] = useState(user.goal || 10);
+  const stepRef = useRef(null);
+  useSwap(stepRef, step, { x: 80, opacity: 0 });
   const name = (user.name || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6);
   async function finish() {
     const { user: next } = await api("/saya", { method: "PATCH", body: { about, goal } }).catch(() => ({ user }));
@@ -26,7 +29,7 @@ export function Kenalan() {
         </div>
         <a href="#/beranda" style={{ fontWeight: 700 }}>Lewati</a>
       </header>
-      <main id="isi" className="stack center grow" style={{ "--gap": "28px", padding: "0 24px 64px" }}>
+      <main id="isi" ref={stepRef} className="stack center grow" style={{ "--gap": "28px", padding: "0 24px 64px" }}>
         {step === 0 && <>
           <h1 className="display h-1 green">Kenalan dulu, yuk.</h1>
           <p className="muted">Jawabanmu dipakai untuk menyusun latihan yang pas.</p>
@@ -68,11 +71,17 @@ export function Kenalan() {
 }
 
 function GoalRing({ minutes, goal }) {
+  const arc = useRef(null);
+  useLayoutEffect(() => {
+    if (!arc.current || reduced()) return;
+    const t = gsap.from(arc.current, { strokeDasharray: `0 ${2 * Math.PI * 34}`, duration: 1.4, ease: "power3.out", delay: 0.3 });
+    return () => t.kill();
+  }, [minutes, goal]);
   const r = 34, full = 2 * Math.PI * r, part = Math.min(1, minutes / goal) * full;
   return (
     <svg width="84" height="84" viewBox="0 0 84 84" role="img" aria-label={`Target harian ${minutes} dari ${goal} menit`}>
       <circle cx="42" cy="42" r={r} fill="none" stroke="rgba(255,246,229,.2)" strokeWidth="10" />
-      <circle cx="42" cy="42" r={r} fill="none" stroke="var(--kuning)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${part} ${full}`} transform="rotate(-90 42 42)" />
+      <circle ref={arc} cx="42" cy="42" r={r} fill="none" stroke="var(--kuning)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${part} ${full}`} transform="rotate(-90 42 42)" />
       <text x="42" y="49" textAnchor="middle" fill="var(--krem)" fontFamily="var(--display)" fontWeight="800" fontSize="20">{minutes}/{goal}</text>
     </svg>
   );
@@ -94,7 +103,7 @@ export function Beranda() {
         <Brand to="beranda" light />
         <div className="row" style={{ "--gap": "10px" }}>
           <span className="chip chip-dark">{stats.streak} hari beruntun</span>
-          <span className="chip chip-dark" style={{ color: "var(--kuning)" }}>{stats.points} poin</span>
+          <span className="chip chip-dark" style={{ color: "var(--kuning)" }}><span data-count={stats.points}>{stats.points}</span> poin</span>
           <a className="btn btn-outline-light btn-sm" href="#/profil">Profil</a>
         </div>
       </header>
@@ -169,6 +178,8 @@ export function Beranda() {
 export function PilihLevel() {
   const progress = useLoad("/progres");
   const [picked, setPicked] = useState(null);
+  const panel = useRef(null);
+  useSwap(panel, picked, { y: 30, opacity: 0, scale: 0.97 });
   if (!progress.data) return <Loading error={progress.error} onRetry={progress.reload} dark />;
   const { stats } = progress.data;
   const top = unlockedLevel(stats.levelsDone);
@@ -195,7 +206,7 @@ export function PilihLevel() {
             );
           })}
         </section>
-        <section className="stack" aria-live="polite" style={{ flex: "999 1 520px", padding: 40, borderRadius: 40, background: "var(--krem)", color: "var(--teks)", "--gap": "20px" }}>
+        <section ref={panel} className="stack" aria-live="polite" style={{ flex: "999 1 520px", padding: 40, borderRadius: 40, background: "var(--krem)", color: "var(--teks)", "--gap": "20px" }}>
           <span className="eyebrow">Level {sel.n} · {sel.name}</span>
           <p className="display green" style={{ fontSize: "3.2rem", letterSpacing: 10 }}>{sel.letters}</p>
           <div className="row" style={{ "--gap": "12px", flexWrap: "nowrap" }}>
