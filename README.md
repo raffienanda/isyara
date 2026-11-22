@@ -45,7 +45,25 @@ Versi produksi di laptop: `npm run build && npm start`, lalu buka http://127.0.0
 
 Kamera hanya jalan di `localhost`/`127.0.0.1` atau di alamat HTTPS.
 
-## Deploy ke server rumah (Docker + Cloudflare Tunnel)
+## Deploy di hp-server (yang sedang dipakai, tanpa Docker)
+
+ISYARA berjalan sebagai layanan systemd milik pengguna, memakai Node dari nvm:
+
+- Folder: `~/apps/isyara` (branch `naufal-dev`), data SQLite di `~/apps/isyara/data`
+- Konfigurasi: `~/apps/isyara/.env` (port 8797, hanya `127.0.0.1`)
+- Layanan: `isyara.service` dan `isyara-tunnel.service` di `~/.config/systemd/user/`
+
+Perbarui setelah push:
+
+```bash
+ssh hp-server
+cd ~/apps/isyara && git pull && PATH=~/.nvm/versions/node/v24.18.0/bin:$PATH npm ci && PATH=~/.nvm/versions/node/v24.18.0/bin:$PATH npm run build
+systemctl --user restart isyara
+```
+
+Alamat publik sementara memakai Cloudflare quick tunnel. Lihat alamatnya dengan `journalctl --user -u isyara-tunnel | grep trycloudflare`. Alamat ini berubah setiap tunnel dinyalakan ulang. Setelah domain `.my.id` siap, tambahkan Public Hostname `http://localhost:8797` di dashboard Cloudflare Zero Trust (tunnel yang sudah ada), lalu matikan tunnel sementara: `systemctl --user disable --now isyara-tunnel`.
+
+## Deploy dengan Docker + Cloudflare Tunnel (alternatif)
 
 ```bash
 git clone -b naufal-dev https://github.com/raffienanda/isyara.git && cd isyara
