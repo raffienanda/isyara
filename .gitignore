@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.zip
+__pycache__/
+*.sqlite
+*.sqlite-*
+.env
+.env.*
+!.env.example
+~$*
