@@ -3,7 +3,8 @@ import { CameraLab, warmUpCamera } from "../lib/media";
 import { useSwap } from "../anim";
 import { api, getPrefs, recordProgress, setPrefs } from "../api";
 import { ALPHABET, GERAK, TWO_HANDED } from "../../shared/levels.js";
-import { ArrowLeft, ArrowRight, Back, LetterMap, Loading, gerakPose, gerakVideo, handImg, tipFor, useAuth, useLoad } from "../ui";
+import { speakWord } from "../lib/voice";
+import { ArrowLeft, ArrowRight, Back, Check, LetterMap, Loading, gerakPose, gerakVideo, handImg, tipFor, useAuth, useLoad } from "../ui";
 
 function Banner({ back, backLabel, title, accent, children, compact }) {
   return (
@@ -63,6 +64,35 @@ export function Kamus() {
   );
 }
 
+const VERDICT = {
+  cocok: ["Benar!", "var(--mint)", w => `Gerakanmu cocok dengan contoh ${w}.`],
+  hampir: ["Hampir!", "#FDF3D7", w => `Gerakan mirip ${w}, tapi belum cukup jelas. Ulangi sedikit lebih pelan, wajah dan kedua tangan tetap di bingkai.`],
+  lain: ["Belum tepat", "var(--peach)", (w, other) => `Gerakanmu lebih mirip ${other}. Lihat lagi pose awal dan akhir ${w}, lalu coba lagi.`],
+  belum: ["Belum terbaca", "var(--putih)", () => "Mulai dari pose awal, lalu gerakkan tangan seperti contoh."],
+  kurang: ["Tangan belum terlihat", "var(--putih)", () => "Mundur sedikit sampai wajah dan kedua tangan masuk bingkai."],
+};
+
+// One clear verdict per attempt, so the learner knows whether the sign was right.
+function Feedback({ word, result, recording, status, notice, tally }) {
+  const W = word.toUpperCase();
+  let title = "Petunjuk kamera", body = status || "Hadapkan wajah dan tangan ke kamera.", bg = "var(--putih)";
+  if (recording) { title = "Merekam…"; body = `Peragakan ${W} sekarang.`; }
+  else if (result) {
+    const [t, b, text] = VERDICT[result.status];
+    title = t; bg = b; body = text(W, (result.word || "").toUpperCase()) + (result.status === "cocok" && notice ? " " + notice : "");
+  }
+  return (
+    <div role="status" aria-live="polite" className="stack" style={{ "--gap": "6px", padding: "16px 20px", borderRadius: 24, background: bg, boxShadow: "0 10px 30px rgba(15,59,46,.08)", border: "1px solid var(--kaca-tepi)" }}>
+      <div className="row between">
+        <strong className="display" style={{ fontSize: "1.5rem", color: result?.status === "lain" && !recording ? "var(--oranye-teks)" : "var(--tua)" }}>{title}</strong>
+        {tally.tries > 0 && <span className="small muted" style={{ fontWeight: 700 }}>Benar {tally.ok} dari {tally.tries} percobaan</span>}
+      </div>
+      <span>{body}</span>
+      {recording && <span className="progress" aria-hidden="true"><span className="rec-bar" /></span>}
+    </div>
+  );
+}
+
 export function Kosakata() {
   const { user } = useAuth();
   useEffect(() => warmUpCamera({ words: true }), []);
@@ -73,14 +103,28 @@ export function Kosakata() {
   const [camera, setCamera] = useState(false);
   const [notice, setNotice] = useState("");
   const [status, setStatus] = useState("");
+  const [result, setResult] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [tally, setTally] = useState({ tries: 0, ok: 0 });
+  const [flash, setFlash] = useState(null);
   const done = useRef(new Set());
   const video = useRef(null);
   const index = GERAK.findIndex(g => g.word === picked);
   const item = GERAK[index];
   const takes = item.takes || 3;
-  function pick(word) { setPicked(word); setTake(1); setNotice(""); }
+  function pick(word) { setPicked(word); setTake(1); setNotice(""); setResult(null); setTally({ tries: 0, ok: 0 }); setFlash(null); }
+  function attempt(r) {
+    setResult({ ...r, n: Date.now() });
+    setTally(t => ({ tries: t.tries + 1, ok: t.ok + (r.status === "cocok" ? 1 : 0) }));
+    if (r.status !== "kurang") {
+      const id = Date.now();
+      setFlash({ status: r.status, id });
+      setTimeout(() => setFlash(f => (f?.id === id ? null : f)), 1400);
+    }
+    if (r.status === "cocok") speakWord(item.word);
+  }
   function matched(word) {
-    setNotice(`Gerakan "${word}" terbaca mirip contoh.` + (user?.role === "pelajar" ? " Tersimpan di progresmu." : ""));
+    setNotice(user?.role === "pelajar" ? "Tersimpan di progresmu." : "");
     if (done.current.has(word)) return;
     done.current.add(word);
     if (user?.role === "pelajar") recordProgress({ type: "gerak", word, seconds: 30 });
@@ -117,19 +161,22 @@ export function Kosakata() {
             </div>
           </div>
           {videoTools}
-          <div role="status" aria-live="polite" className="stack" style={{ "--gap": "6px", padding: "16px 20px", borderRadius: 24, background: notice ? "var(--mint)" : "var(--putih)", boxShadow: "0 10px 30px rgba(15,59,46,.08)" }}>
-            <span className="eyebrow">{notice ? "Berhasil" : "Petunjuk kamera"}</span>
-            <strong>{notice || status || "Hadapkan wajah dan tangan ke kamera."}</strong>
-          </div>
+          <Feedback word={item.word} result={result} recording={recording} status={status} notice={notice} tally={tally} />
           <div className="row between" style={{ marginTop: "auto" }}>
             <button className="btn btn-outline" disabled={index === 0} onClick={() => pick(GERAK[index - 1].word)}><ArrowLeft />Sebelumnya</button>
             <button className="btn btn-primary" disabled={index === GERAK.length - 1} onClick={() => pick(GERAK[index + 1].word)}>Kata berikutnya<ArrowRight /></button>
           </div>
         </section>
         <section className="half cam-first" aria-label="Kamera" style={{ minHeight: 420 }}>
-          <CameraLab className="camera-word" targetWord={picked} guided autoStart onMatch={matched} onStatus={setStatus} />
+          <CameraLab className="camera-word" targetWord={picked} guided autoStart onMatch={matched} onStatus={setStatus} onResult={attempt} onRecording={setRecording} />
+          {recording && <div aria-hidden="true" className="rec-ring" />}
+          {flash && (
+            <div aria-hidden="true" key={flash.id} className={"verdict pop verdict-" + flash.status}>
+              {flash.status === "cocok" ? <Check size={72} /> : flash.status === "hampir" ? "≈" : "✕"}
+            </div>
+          )}
           <div className="overlay-top on-dark">
-            <span className="chip chip-glass">Peragakan {item.word.toUpperCase()} ±2 detik</span>
+            <span className="chip chip-glass">{recording ? "Merekam… peragakan sekarang" : "Peragakan " + item.word.toUpperCase() + " ±2 detik"}</span>
             <span className="chip chip-glass small">Diproses di perangkat</span>
           </div>
         </section>

@@ -78,6 +78,7 @@ function Game({ id, level, words }) {
   const frame = useRef(0);
   const started = useRef(Date.now());
   const letterStart = useRef(Date.now());
+  const marks = useRef([]);
 
   useEffect(() => { fetch("./alphabet.json").then(r => r.json()).then(b => { bank.current = b; }).catch(() => {}); }, []);
   useEffect(() => {
@@ -134,6 +135,7 @@ function Game({ id, level, words }) {
     const seconds = Math.round((Date.now() - letterStart.current) / 1000);
     const okFingers = fingers?.filter(f => f.ok).length ?? 4;
     recordProgress({ type: "huruf", letter, status, seconds, match: status === "kuasai" ? 60 + okFingers * 8 : 0 });
+    marks.current[li] = status;
     setResult(r => {
       const mastered = new Set(r.mastered), skipped = new Set(r.skipped);
       if (status === "kuasai") { mastered.add(letter); skipped.delete(letter); } else if (!mastered.has(letter)) skipped.add(letter);
@@ -196,11 +198,13 @@ function Game({ id, level, words }) {
   }
 
   function nextWordStart() {
+    marks.current = [];
     setWi(wi + 1); setLi(0); setPhase("main"); letterStart.current = Date.now();
     hold$.current = { since: null, frames: 0, release: false, misses: 0, gap: false, lastMatch: 0 };
     setHint("Tirukan huruf pertama.");
   }
   function restart() {
+    marks.current = [];
     setWi(0); setLi(0); setPoints(0); setPhase("main"); setResult({ mastered: new Set(), skipped: new Set() });
     started.current = Date.now(); letterStart.current = Date.now(); setElapsed(0);
   }
@@ -291,25 +295,33 @@ function Game({ id, level, words }) {
       </div>
 
       {phase === "kata" && (
-        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="kata-selesai" className="bg-hijau on-dark stack center" style={{ position: "fixed", inset: 0, zIndex: 20, "--gap": "26px", padding: 24 }}>
-          <span className="k-check" style={{ display: "grid", placeItems: "center", width: 88, height: 88, borderRadius: "50%", background: "var(--kuning)", color: "var(--tua)" }}><Check size={48} /></span>
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="kata-selesai" className="bg-hijau on-dark stack center" style={{ position: "fixed", inset: 0, zIndex: 20, "--gap": "clamp(12px, 2.4vh, 22px)", padding: 24, overflowY: "auto" }}>
+          <span className="k-check" style={{ display: "grid", placeItems: "center", width: 80, height: 80, borderRadius: "50%", background: "var(--kuning)", color: "var(--tua)" }}><Check size={44} /></span>
           <h2 id="kata-selesai" className="display h-1 k-title">{word} selesai! <span className="accent">+{word.length * WORD_POINTS}</span></h2>
-          <span className="eyebrow k-rest">Kata berikutnya</span>
-          <p className="display accent k-next" aria-label={nextWord} style={{ fontSize: "clamp(4rem, 12vw, 9rem)", letterSpacing: 12 }}>
-            {Array.from(nextWord).map((ch, i) => <span key={i} aria-hidden="true" style={{ display: "inline-block" }}>{ch}</span>)}
-          </p>
-          <div className="row" style={{ justifyContent: "center", "--gap": "12px" }}>
-            {Array.from(nextWord).map((ch, i) => (
-              <span key={i} className="k-tile" style={{ width: 104, height: 104, borderRadius: 26, background: "var(--krem)", display: "grid", placeItems: "center" }}>
-                <img src={handImg(ch)} alt={"Huruf " + ch} width="88" height="88" style={{ objectFit: "contain" }} />
-              </span>
-            ))}
+          <div className="row k-rest" aria-label={"Huruf kata " + word} style={{ justifyContent: "center", "--gap": "8px" }}>
+            {Array.from(word).map((ch, i) => {
+              const skipped = marks.current[i] === "lewati";
+              return <span key={i} className="letter" aria-label={ch + (skipped ? ", dilewati" : ", benar")} style={{ width: 56, height: 60, background: skipped ? "transparent" : "var(--neon)", color: skipped ? "var(--kuning)" : "var(--tua)", border: skipped ? "3px dashed var(--oranye)" : "3px solid transparent" }}>{ch}</span>;
+            })}
           </div>
+          <section className="card k-rest stack center" aria-label={"Kata berikutnya " + nextWord} style={{ width: "100%", maxWidth: 520, padding: "18px 24px", "--gap": "10px" }}>
+            <span className="small" style={{ fontWeight: 700, color: "var(--neon)" }}>Kata berikutnya</span>
+            <p className="display k-next" aria-hidden="true" style={{ fontSize: "clamp(2.2rem, 5vw, 3.2rem)", letterSpacing: 8, color: "var(--krem)" }}>
+              {Array.from(nextWord).map((ch, i) => <span key={i} style={{ display: "inline-block" }}>{ch}</span>)}
+            </p>
+            <div className="row" style={{ justifyContent: "center", "--gap": "8px" }}>
+              {Array.from(nextWord).map((ch, i) => (
+                <span key={i} className="k-tile" style={{ width: 68, height: 68, borderRadius: 18, background: "var(--krem)", display: "grid", placeItems: "center" }}>
+                  <img src={handImg(ch)} alt={"Huruf " + ch} width="56" height="56" style={{ objectFit: "contain" }} />
+                </span>
+              ))}
+            </div>
+          </section>
           <div className="stack k-rest" style={{ width: "100%", maxWidth: 460, "--gap": "8px" }}>
-            <div className="row between small" style={{ fontWeight: 700 }}><span>Kata {wi + 2} dari {words.length}</span><span>{points} poin</span></div>
+            <div className="row between small" style={{ fontWeight: 700 }}><span>{wi + 1} dari {words.length} kata selesai</span><span>{points} poin</span></div>
             <div className="progress"><span style={{ width: ((wi + 1) / words.length) * 100 + "%", background: "var(--kuning)" }} /></div>
           </div>
-          <button className="btn btn-cream btn-lg k-rest" autoFocus onClick={nextWordStart}>Lanjut <ArrowRight /></button>
+          <button className="btn btn-cream btn-lg k-rest" autoFocus onClick={nextWordStart}>Lanjut ke {nextWord}</button>
           <button className="back k-rest" onClick={() => go(exit)}>Istirahat dulu</button>
         </div>
       )}

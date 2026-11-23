@@ -194,6 +194,8 @@ export function CameraLab({
   autoStart = false,
   className = "",
   onStatus,
+  onResult,
+  onRecording,
 }) {
   const bank = useRef([]),
     letters = useRef([]);
@@ -220,6 +222,12 @@ export function CameraLab({
   const statusObserver = useRef(onStatus);
   statusObserver.current = onStatus;
   useEffect(() => { statusObserver.current?.(msg); }, [msg]);
+  // Guided word practice reports each attempt as cocok / hampir / lain / kurang, and when it is recording.
+  const resultObserver = useRef(onResult);
+  resultObserver.current = onResult;
+  const recordingObserver = useRef(onRecording);
+  recordingObserver.current = onRecording;
+  useEffect(() => { recordingObserver.current?.(saving); }, [saving]);
   const faceObserver = useRef(onFaceFrame);
   faceObserver.current = onFaceFrame;
   const letterObserver = useRef(onLetterFrame);
@@ -570,6 +578,7 @@ export function CameraLab({
       let a = seq.current;
       if (a.length < 5) {
         onUncertain?.();
+        if (targetWord) resultObserver.current?.({ status: "kurang" });
         setMsg("Tangan belum cukup terlihat. Ulangi latihan.");
         return;
       }
@@ -582,13 +591,20 @@ export function CameraLab({
           setMsg(leading ? `Kandidat AI: ${leading.word} · dukungan model ${Math.round(leading.score * 100)}%. Pilih kata jika sesuai.` : "Belum menemukan gerakan yang sesuai dalam 10 kata latihan.");
           return;
         }
-        if (!match.clear) {
-          setMsg("Gerakan belum dapat dibedakan. Putar contoh lalu coba lagi dengan wajah dan kedua tangan dalam bingkai.");
-        } else if (match.word === currentWord.current) {
-          onMatch?.(currentWord.current);
-          setMsg("Lintasan tangan mendekati contoh kata " + currentWord.current + ". Periksa kembali bersama pendamping.");
+        const target = currentWord.current;
+        if (match.clear && match.word === target) {
+          onMatch?.(target);
+          resultObserver.current?.({ status: "cocok", word: target });
+          setMsg("Gerakanmu cocok dengan contoh " + target.toUpperCase() + ".");
+        } else if (match.word === target) {
+          resultObserver.current?.({ status: "hampir", word: target });
+          setMsg("Hampir. Gerakan mirip " + target.toUpperCase() + ", tapi belum cukup jelas.");
+        } else if (match.clear) {
+          resultObserver.current?.({ status: "lain", word: match.word });
+          setMsg("Gerakanmu lebih mirip " + match.word.toUpperCase() + ".");
         } else {
-          setMsg("Gerakan lebih dekat ke contoh kata " + match.word + ". Amati kembali posisi awal dan akhir kata " + currentWord.current + ".");
+          resultObserver.current?.({ status: "belum", word: match.word });
+          setMsg("Gerakan belum terbaca jelas.");
         }
         return;
       }
