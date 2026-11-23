@@ -250,6 +250,7 @@ export function Tentang() {
           <h2 className="display h-2">Privasi dan data</h2>
           <ul style={{ margin: 0, paddingLeft: 22 }} className="stack">
             <li>Gambar kamera diproses di perangkatmu dan tidak pernah dikirim atau disimpan.</li>
+            <li>File model AI diunduh dari CDN resmi MediaPipe (jsDelivr dan Google) supaya cepat. Yang diunduh hanya model, tidak ada data pribadi yang dikirim.</li>
             <li>Yang disimpan hanya nama panggilan, kelompok, huruf yang dikuasai, dan waktu latihan.</li>
             <li>Pendamping hanya melihat progres anak yang bergabung ke kelompoknya lewat kode.</li>
           </ul>

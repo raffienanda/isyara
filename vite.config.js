@@ -2,8 +2,12 @@ import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+const mediapipe = JSON.parse(fs.readFileSync("node_modules/@mediapipe/tasks-vision/package.json", "utf8"));
+
 export default defineConfig({
   base: "./",
+  // Pins the CDN copy of the MediaPipe runtime to the exact installed version.
+  define: { __MEDIAPIPE_VERSION__: JSON.stringify(mediapipe.version) },
   server: {
     host: "127.0.0.1",
     proxy: { "/api": "http://127.0.0.1:8787" },

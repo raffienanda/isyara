@@ -17,6 +17,7 @@ sigawari, WL-BISINDO-10class, https://huggingface.co/datasets/sigawari/wl-bisind
 
 Pelacakan tangan dan wajah
 Google MediaPipe Tasks Vision, model hand_landmarker dan face_landmarker. https://github.com/google-ai-edge/mediapipe (Apache 2.0)
+Runtime dan model diunduh dari cdn.jsdelivr.net dan storage.googleapis.com, dengan salinan identik di wasm/ dan models/ sebagai cadangan.
 
 Ringkasan dan latihan pintar
 Google Gemini API, dipanggil dari server dengan data progres tanpa nama dan tanpa gambar.

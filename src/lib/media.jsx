@@ -12,35 +12,82 @@ const loadOptionalModel = url => fetch(url)
   .catch(() => null);
 /* Shared MediaPipe setup. The wasm runtime and each landmarker are created once per page
    load and reused by every camera view, so switching words or pages does not reload them. */
-let visionPromise;
-function loadVision() {
-  visionPromise ??= (async () => {
-    const mod = await import("@mediapipe/tasks-vision");
-    const files = await mod.FilesetResolver.forVisionTasks("./wasm");
-    return { HandLandmarker: mod.HandLandmarker, FaceLandmarker: mod.FaceLandmarker, files };
-  })().catch(error => { visionPromise = null; throw error; });
-  return visionPromise;
+/* The wasm runtime and the models are byte-identical copies of the official MediaPipe
+   releases, which are also on fast public CDNs. Fetching them there spares the home
+   server's slow upload. Same-origin copies remain the fallback (offline, blocked CDN). */
+// eslint-disable-next-line no-undef
+const CDN_WASM = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${__MEDIAPIPE_VERSION__}/wasm`;
+const MODELS = {
+  hand: ["https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", "./models/hand.task"],
+  face: ["https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", "./models/face.task"],
+};
+const timeout = ms => (AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
+
+const modelPromises = {};
+function modelBytes(name) {
+  modelPromises[name] ??= (async () => {
+    const [cdn, local] = MODELS[name];
+    if (navigator.onLine) {
+      try {
+        const res = await fetch(cdn, { mode: "cors", signal: timeout(20000) });
+        if (res.ok) return new Uint8Array(await res.arrayBuffer());
+      } catch { /* fall back to the copy on our own server */ }
+    }
+    const res = await fetch(local);
+    if (!res.ok) throw Error("Model " + name + " gagal dimuat");
+    return new Uint8Array(await res.arrayBuffer());
+  })().catch(error => { delete modelPromises[name]; throw error; });
+  return modelPromises[name];
 }
+
+const visionPromises = {};
+function loadVision(local = false) {
+  const key = local ? "lokal" : "cdn";
+  visionPromises[key] ??= (async () => {
+    const mod = await import("@mediapipe/tasks-vision");
+    let base = "./wasm";
+    if (!local && navigator.onLine) {
+      try {
+        const probe = await fetch(CDN_WASM + "/vision_wasm_internal.js", { method: "HEAD", mode: "cors", signal: timeout(3000) });
+        if (probe.ok) base = CDN_WASM;
+      } catch { /* keep the local runtime */ }
+    }
+    const files = await mod.FilesetResolver.forVisionTasks(base);
+    return { HandLandmarker: mod.HandLandmarker, FaceLandmarker: mod.FaceLandmarker, files, local: base === "./wasm" };
+  })().catch(error => { delete visionPromises[key]; throw error; });
+  return visionPromises[key];
+}
+
+// Download the runtime and the model at the same time, and retry once on the local runtime.
+async function createLandmarker(kind, model, options) {
+  const [vision, bytes] = await Promise.all([loadVision(), modelBytes(model)]);
+  const make = v => v[kind].createFromOptions(v.files, { ...options, baseOptions: { modelAssetBuffer: bytes } });
+  try {
+    return await make(vision);
+  } catch (error) {
+    if (vision.local) throw error;
+    return make(await loadVision(true));
+  }
+}
+
 const handPromises = {};
 function handLandmarker(alphabet) {
   const key = alphabet ? "alfabet" : "kata";
-  handPromises[key] ??= loadVision().then(v => v.HandLandmarker.createFromOptions(v.files, {
-    baseOptions: { modelAssetPath: "./models/hand.task" },
+  handPromises[key] ??= createLandmarker("HandLandmarker", "hand", {
     runningMode: "VIDEO",
     numHands: 2,
     ...(alphabet && { minHandDetectionConfidence: .2, minHandPresenceConfidence: .25, minTrackingConfidence: .3 }),
-  })).catch(error => { delete handPromises[key]; throw error; });
+  }).catch(error => { delete handPromises[key]; throw error; });
   return handPromises[key];
 }
 let facePromise;
 function faceLandmarker() {
-  facePromise ??= loadVision().then(v => v.FaceLandmarker.createFromOptions(v.files, {
-    baseOptions: { modelAssetPath: "./models/face.task" },
+  facePromise ??= createLandmarker("FaceLandmarker", "face", {
     runningMode: "VIDEO",
     numFaces: 1,
     outputFaceBlendshapes: true,
     outputFacialTransformationMatrixes: true,
-  })).catch(error => { facePromise = null; throw error; });
+  }).catch(error => { facePromise = null; throw error; });
   return facePromise;
 }
 let alphabetPromise;
@@ -61,6 +108,7 @@ export function warmUpCamera({ words = false } = {}) {
   const run = () => {
     const quiet = p => p.catch(() => {});
     quiet(loadAlphabetData());
+    quiet(modelBytes("hand"));
     quiet(handLandmarker(true));
     if (words) { quiet(handLandmarker(false)); quiet(faceLandmarker()); quiet(loadWordModels()); }
   };

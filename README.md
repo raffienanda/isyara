@@ -87,6 +87,7 @@ Pembaruan: `git pull && docker compose up -d --build`. Database tersimpan di vol
 ## Privasi dan data
 
 - Gambar kamera diproses di perangkat dan tidak dikirim atau disimpan.
+- Runtime wasm dan model MediaPipe diunduh dari CDN resmi (jsDelivr, storage.googleapis.com) karena jauh lebih cepat dari upload server rumah. File-nya identik dengan salinan di `public/`, dan salinan itu dipakai otomatis kalau CDN tidak bisa dijangkau atau sedang luring.
 - Server menyimpan: nama panggilan, nama pengguna, kata sandi (di-hash scrypt), kelompok, huruf yang dikuasai, waktu latihan, catatan pendamping.
 - Pendamping hanya melihat pelajar yang bergabung ke kelompoknya lewat kode.
 - Ke Gemini hanya dikirim angka progres. Nama pelajar diganti `{nama}` dan diisi kembali di server.
