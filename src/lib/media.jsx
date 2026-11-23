@@ -22,12 +22,14 @@ const MODELS = {
   face: ["https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", "./models/face.task"],
 };
 const timeout = ms => (AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
+// On localhost the same-origin copy is faster than any CDN.
+const useCdn = () => navigator.onLine && !/^(localhost|127\.|\[::1\])/.test(location.hostname);
 
 const modelPromises = {};
 function modelBytes(name) {
   modelPromises[name] ??= (async () => {
     const [cdn, local] = MODELS[name];
-    if (navigator.onLine) {
+    if (useCdn()) {
       try {
         const res = await fetch(cdn, { mode: "cors", signal: timeout(20000) });
         if (res.ok) return new Uint8Array(await res.arrayBuffer());
@@ -46,12 +48,15 @@ function loadVision(local = false) {
   visionPromises[key] ??= (async () => {
     const mod = await import("@mediapipe/tasks-vision");
     let base = "./wasm";
-    if (!local && navigator.onLine) {
+    if (!local && useCdn()) {
       try {
         const probe = await fetch(CDN_WASM + "/vision_wasm_internal.js", { method: "HEAD", mode: "cors", signal: timeout(3000) });
         if (probe.ok) base = CDN_WASM;
       } catch { /* keep the local runtime */ }
     }
+    // MediaPipe only requests the wasm once the model is ready; start it now so both
+    // downloads overlap. The later request is served from the browser cache.
+    fetch(base + "/vision_wasm_internal.wasm").catch(() => {});
     const files = await mod.FilesetResolver.forVisionTasks(base);
     return { HandLandmarker: mod.HandLandmarker, FaceLandmarker: mod.FaceLandmarker, files, local: base === "./wasm" };
   })().catch(error => { delete visionPromises[key]; throw error; });
