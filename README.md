@@ -41,7 +41,7 @@ cp .env.example .env      # opsional: isi GEMINI_API_KEY dan DEMO_PASSWORD
 npm run dev               # buka http://127.0.0.1:5173
 ```
 
-Di halaman Masuk ada tombol **Coba langsung**: sekali klik masuk sebagai pelajar demo (Budi) atau pendamping demo (Bu Rina), tanpa kata sandi. Data demo dibuat otomatis. Akun demo: `demo.rina` (pendamping), `demo.budi`, `demo.sari`, `demo.ayu`, `demo.dimas` (pelajar), kode Kelas 4A `4A27`. Nama pengguna berawalan `demo.` tidak bisa dipakai untuk daftar biasa, jadi tombol demo tidak pernah membuka akun orang lain. Matikan tombol demo dengan `DEMO_LOGIN=0` di `.env`.
+Di halaman Masuk ada tombol **Coba langsung**: sekali klik masuk sebagai pelajar demo (Budi) atau pendamping demo (Bu Rina), tanpa kata sandi. Akun demo: `demo.rina` (pendamping), `demo.budi`, `demo.sari`, `demo.ayu`, `demo.dimas`, `demo.nadia`, `demo.fajar`, `demo.rizki`, `demo.lala` (pelajar), kode Kelas 4A `4A27`, kata sandi `isyara-demo` (atau nilai `DEMO_PASSWORD`). Data demo dibangun ulang otomatis setiap hari mulai pukul 07.00 WIB, jadi dashboard selalu berisi latihan 7 hari terakhir dan perubahan pengunjung pada akun demo dikembalikan. Kata sandi akun demo tidak bisa diganti. Bangun ulang manual: `npm run seed`. Nama pengguna berawalan `demo.` tidak bisa dipakai untuk daftar biasa, jadi tombol demo tidak pernah membuka akun orang lain. Matikan tombol demo dengan `DEMO_LOGIN=0` di `.env`.
 
 Versi produksi di laptop: `npm run build && npm start`, lalu buka http://127.0.0.1:8787.
 

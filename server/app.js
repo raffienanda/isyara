@@ -5,10 +5,13 @@ import { all, one, run, transaction, hashPassword, checkPassword, newCode, publi
 import { studentSummary, notesFor, groupsOfStudent, canManageStudent } from "./stats.js";
 import { summarize, smartPractice } from "./ai.js";
 import { ALPHABET, LEVELS, GERAK, WORD_POINTS } from "../shared/levels.js";
-import { DEMO, seedDemo } from "./seed.js";
+import { DEMO, isDemo, keepDemoFresh, seedDemo } from "./seed.js";
 
 // One-click demo login is on by default for the competition. Set DEMO_LOGIN=0 to turn it off.
 const demoEnabled = process.env.DEMO_LOGIN !== "0";
+if (demoEnabled) keepDemoFresh();
+// The demo accounts are shared by every visitor, so their passwords stay as written in the proposal.
+const DEMO_PASSWORD_LOCKED = "Kata sandi akun demo tidak bisa diganti, supaya pengunjung lain tetap bisa masuk.";
 
 const COOKIE = "isyara_sesi";
 const SESSION_DAYS = 30;
@@ -140,6 +143,7 @@ api.patch("/saya", async c => {
   if ([5, 10, 15].includes(d.goal)) run("UPDATE users SET goal = ? WHERE id = ?", d.goal, user.id);
   if (d.about !== undefined) run("UPDATE users SET about = ? WHERE id = ?", text(d.about, 40) || null, user.id);
   if (d.password !== undefined) {
+    if (isDemo(user.username)) fail(403, DEMO_PASSWORD_LOCKED);
     if (typeof d.password !== "string" || d.password.length < 6) fail(400, "Kata sandi baru minimal 6 karakter.");
     if (!user.must_change && (typeof d.oldPassword !== "string" || !checkPassword(d.oldPassword, user.pass))) fail(400, "Kata sandi lama tidak cocok.");
     run("UPDATE users SET pass = ?, must_change = 0 WHERE id = ?", hashPassword(d.password), user.id);
@@ -346,6 +350,7 @@ api.post("/pelajar/:id/catatan", async c => {
 api.post("/pelajar/:id/sandi", c => {
   const user = need(c, "pendamping");
   const s = ownStudent(c, user);
+  if (isDemo(s.username)) fail(403, DEMO_PASSWORD_LOCKED);
   const words = ["KUCING", "PELANGI", "MANGGA", "BINTANG", "SEPEDA", "KELINCI", "PISANG", "AWAN"];
   const temp = words[crypto.randomInt(words.length)] + "-" + crypto.randomInt(10, 100);
   run("UPDATE users SET pass = ?, must_change = 1 WHERE id = ?", hashPassword(temp), s.id);
