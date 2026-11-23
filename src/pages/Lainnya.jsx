@@ -235,7 +235,7 @@ export function Kosakata() {
 
 export function Profil({ query }) {
   const { user, setUser, logout } = useAuth();
-  const progress = useLoad("/progres");
+  const progress = useLoad(user?.role === "pelajar" ? "/progres" : null);
   const [prefs, update] = useState(getPrefs);
   const [msg, setMsg] = useState({});
   const [pack, setPack] = useState("");

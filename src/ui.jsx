@@ -33,6 +33,7 @@ export const useAuth = () => useContext(AuthContext);
 export function useLoad(path, deps = []) {
   const [state, setState] = useState({ data: null, error: "", loading: true });
   const reload = useCallback(() => {
+    if (!path) { setState({ data: null, error: "", loading: false }); return Promise.resolve(); }
     setState(s => ({ ...s, loading: true }));
     return api(path).then(data => setState({ data, error: "", loading: false }))
       .catch(e => setState(s => ({ ...s, error: e.message, loading: false })));
@@ -45,8 +46,8 @@ export function useLoad(path, deps = []) {
 /* ---------- Assets ---------- */
 const SPECIAL = { D: "D-kontak-v2", J: "J-kelingking" };
 export const handImg = letter => `./alfabet-3d/${SPECIAL[letter] ?? letter + "-render"}.webp`;
-export const gerakVideo = (word, n = 1) => `./gerak/${word.replaceAll(" ", "_")}-${n}.mp4`;
-export const gerakPose = (word, n, which) => `./gerak/${word.replaceAll(" ", "_")}-${n}-${which}.webp`;
+export const gerakVideo = (word, n = 1) => `./gerak/${word.replaceAll(" ", "_")}-${n}.mp4?v=${__GERAK_VERSION__}`;
+export const gerakPose = (word, n, which) => `./gerak/${word.replaceAll(" ", "_")}-${n}-${which}.webp?v=${__GERAK_VERSION__}`;
 
 export const TIPS = {
   A: "Satukan ujung telunjuk dan ibu jari kedua tangan di depan dada.",

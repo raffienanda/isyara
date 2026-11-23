@@ -3,7 +3,7 @@ import { warmUpCamera } from "../lib/media";
 import { gsap, reduced, useSwap } from "../anim";
 import { api } from "../api";
 import { LEVELS, unlockedLevel } from "../../shared/levels.js";
-import { ArrowRight, Back, Brand, Check, Loading, Lock, Spark, go, handImg, useAuth, useLoad } from "../ui";
+import { ArrowRight, Back, Brand, Check, Loading, Lock, Spark, gerakVideo, go, handImg, useAuth, useLoad } from "../ui";
 
 export function Kenalan() {
   const { user, setUser } = useAuth();
@@ -147,7 +147,7 @@ export function Beranda() {
             <span className="muted" style={{ maxWidth: 220 }}>Latih ejaan namamu sendiri: {user.name}.</span>
           </a>
           <a className="tile-link" href="#/kosakata">
-            <video className="art" src="./gerak/terima_kasih-1.mp4" muted loop autoPlay playsInline aria-hidden="true" style={{ borderRadius: 28, right: 14, bottom: 14, width: 140, height: 140, objectFit: "cover" }} />
+            <video className="art" src={gerakVideo("terima kasih", 1)} muted loop autoPlay playsInline aria-hidden="true" style={{ borderRadius: 28, right: 14, bottom: 14, width: 140, height: 140, objectFit: "cover" }} />
             <span className="eyebrow">{stats.gerak.length}/10 kata</span>
             <strong className="display h-2">Kosakata gerak</strong>
             <span className="muted" style={{ maxWidth: 200 }}>Kata sehari-hari dengan animasi tangan 3D.</span>

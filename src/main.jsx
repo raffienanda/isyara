@@ -69,5 +69,15 @@ createRoot(document.getElementById("root")).render(
 );
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(console.warn));
+  // When a new version takes over an open page, reload once so the page matches the new files.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
+    .then(reg => { document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); }); })
+    .catch(console.warn));
 }
