@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
-import { CameraLab } from "../lib/media";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CameraLab, warmUpCamera } from "../lib/media";
 import { useSwap } from "../anim";
 import { api, getPrefs, recordProgress, setPrefs } from "../api";
 import { ALPHABET, GERAK, TWO_HANDED } from "../../shared/levels.js";
@@ -65,6 +65,7 @@ export function Kamus() {
 
 export function Kosakata() {
   const { user } = useAuth();
+  useEffect(() => warmUpCamera({ words: true }), []);
   const [picked, setPicked] = useState("terima kasih");
   const [take, setTake] = useState(1);
   const [slow, setSlow] = useState(false);

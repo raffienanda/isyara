@@ -1,4 +1,5 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { warmUpCamera } from "../lib/media";
 import { gsap, reduced, useSwap } from "../anim";
 import { api } from "../api";
 import { LEVELS, unlockedLevel } from "../../shared/levels.js";
@@ -89,6 +90,7 @@ function GoalRing({ minutes, goal }) {
 
 export function Beranda() {
   const { user } = useAuth();
+  useEffect(() => warmUpCamera(), []);
   const progress = useLoad("/progres");
   const smart = useLoad("/latihan-pintar");
   if (!progress.data) return <Loading error={progress.error} onRetry={progress.reload} dark />;
@@ -176,6 +178,7 @@ export function Beranda() {
 }
 
 export function PilihLevel() {
+  useEffect(() => warmUpCamera(), []);
   const progress = useLoad("/progres");
   const [picked, setPicked] = useState(null);
   const panel = useRef(null);
@@ -231,6 +234,7 @@ export function PilihLevel() {
 }
 
 export function Tangan({ level }) {
+  useEffect(() => warmUpCamera(), []);
   const { user, setUser } = useAuth();
   async function pick(hand) {
     if (hand !== user.hand) {
@@ -263,6 +267,7 @@ export function Tangan({ level }) {
 }
 
 export function SiapKamera({ level }) {
+  useEffect(() => warmUpCamera(), []);
   const steps = [["Izinkan kamera", "Pilih Izinkan saat browser bertanya."],
     ["Cahaya cukup terang", "Jangan membelakangi jendela atau lampu."],
     ["Tunjukkan telapak tanganmu", "Angkat tangan di depan dada, semua jari terlihat."],

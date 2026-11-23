@@ -16,6 +16,18 @@ app.use("*", async (c, next) => {
   c.header("Permissions-Policy", "camera=(self), microphone=(), geolocation=()");
 });
 
+// Heavy recognizer files rarely change; let browsers (and Cloudflare, with a cache rule) keep them.
+const LONG = "public, max-age=31536000, immutable";
+const WEEK = "public, max-age=604800, stale-while-revalidate=86400";
+app.use("*", async (c, next) => {
+  await next();
+  const p = c.req.path;
+  if (p.startsWith("/api/") || c.res.status !== 200) return;
+  if (p.startsWith("/assets/")) c.header("Cache-Control", LONG);
+  else if (/^\/(wasm|models|alfabet-3d|gerak|bg|logos)\//.test(p) || /\.(json|task|wasm|webp|mp4|png)$/.test(p)) c.header("Cache-Control", WEEK);
+  else c.header("Cache-Control", "no-cache");
+});
+
 app.get("/api/sehat", c => c.json({ ok: true }));
 app.route("/api", api);
 app.all("/api/*", c => c.json({ error: "Alamat API tidak ditemukan." }, 404));

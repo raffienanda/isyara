@@ -168,6 +168,9 @@ textarea.input { height: auto; padding: 14px 20px; border-radius: 24px; resize: 
 .camera .viewer svg { opacity: .5; }
 .camera > small { display: none; }
 .camera > p[role="status"] { display: none; }
+.camera:not(.running) > p[role="status"] { display: block; position: absolute; left: 24px; right: 24px; top: calc(50% + 48px); text-align: center; font-weight: 700; color: var(--krem); }
+.camera:not(.running) .viewer svg { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .2; transform: scale(.9); } }
 .camera > .controls { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 10px; }
 .camera.running > .controls { top: auto; bottom: auto; left: auto; right: 24px; top: 80px; transform: none; }
 .camera > .controls button { min-height: 52px; padding: 0 26px; border-radius: 999px; border: 0; background: var(--krem); color: var(--tua); font-weight: 700; }

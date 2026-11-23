@@ -10,6 +10,64 @@ const pauseTracks = (s) => s?.getTracks().forEach((t) => t.stop());
 const loadOptionalModel = url => fetch(url)
   .then(response => response.ok ? response.json() : null)
   .catch(() => null);
+/* Shared MediaPipe setup. The wasm runtime and each landmarker are created once per page
+   load and reused by every camera view, so switching words or pages does not reload them. */
+let visionPromise;
+function loadVision() {
+  visionPromise ??= (async () => {
+    const mod = await import("@mediapipe/tasks-vision");
+    const files = await mod.FilesetResolver.forVisionTasks("./wasm");
+    return { HandLandmarker: mod.HandLandmarker, FaceLandmarker: mod.FaceLandmarker, files };
+  })().catch(error => { visionPromise = null; throw error; });
+  return visionPromise;
+}
+const handPromises = {};
+function handLandmarker(alphabet) {
+  const key = alphabet ? "alfabet" : "kata";
+  handPromises[key] ??= loadVision().then(v => v.HandLandmarker.createFromOptions(v.files, {
+    baseOptions: { modelAssetPath: "./models/hand.task" },
+    runningMode: "VIDEO",
+    numHands: 2,
+    ...(alphabet && { minHandDetectionConfidence: .2, minHandPresenceConfidence: .25, minTrackingConfidence: .3 }),
+  })).catch(error => { delete handPromises[key]; throw error; });
+  return handPromises[key];
+}
+let facePromise;
+function faceLandmarker() {
+  facePromise ??= loadVision().then(v => v.FaceLandmarker.createFromOptions(v.files, {
+    baseOptions: { modelAssetPath: "./models/face.task" },
+    runningMode: "VIDEO",
+    numFaces: 1,
+    outputFaceBlendshapes: true,
+    outputFacialTransformationMatrixes: true,
+  })).catch(error => { facePromise = null; throw error; });
+  return facePromise;
+}
+let alphabetPromise;
+function loadAlphabetData() {
+  alphabetPromise ??= Promise.all([
+    fetch("./alphabet.json").then(r => { if (!r.ok) throw Error("Alfabet belum tersedia"); return r.json(); }),
+    loadOptionalModel("./model-alfabet-tumpang-tindih.json"),
+    loadOptionalModel("./models/alfabet-satu-tangan.json"),
+    loadOptionalModel("./models/alfabet-dua-tangan.json"),
+  ]).then(([bank, overlap, one, two]) => ({ bank, overlap, models: [one, two] }))
+    .catch(error => { alphabetPromise = null; throw error; });
+  return alphabetPromise;
+}
+
+/* Start downloading and compiling the recognizer in the background, e.g. while the
+   student is still choosing a level, so the camera is ready when the game opens. */
+export function warmUpCamera({ words = false } = {}) {
+  const run = () => {
+    const quiet = p => p.catch(() => {});
+    quiet(loadAlphabetData());
+    quiet(handLandmarker(true));
+    if (words) { quiet(handLandmarker(false)); quiet(faceLandmarker()); quiet(loadWordModels()); }
+  };
+  if ("requestIdleCallback" in window) requestIdleCallback(run, { timeout: 2500 });
+  else setTimeout(run, 800);
+}
+
 const overlapViews = [[480, 0], [480, Math.PI / 12], [550, 0], [480, -Math.PI / 6]];
 const overlapRecoveryViews = [
   [670, 0, "hand"],
@@ -163,16 +221,28 @@ export function CameraLab({
     const id = ++generation.current;
     let stream, hm, fm, overlapModel, alphabetModels;
     setBusy(true);
-    setMsg("Memuat kamera dan model lokal…");
+    setMsg("Menyiapkan kamera dan AI pengenal tangan…");
+    // Landmarkers are shared across camera views, so releasing only stops the camera.
     const release = () => {
       pauseTracks(stream);
-      hm?.close();
       hm = null;
-      fm?.close();
       fm = null;
     };
     stopper.current = release;
+    let slow;
     try {
+      // Models download while the camera permission prompt is still open.
+      const ready = Promise.all([
+        loadVision(),
+        faceOnly ? null : handLandmarker(alphabet),
+        alphabet ? null : faceLandmarker(),
+        targetWord || recognizeWords ? loadWordModels() : null,
+        alphabet ? loadAlphabetData() : null,
+      ]);
+      ready.catch(() => {});
+      slow = setTimeout(() => {
+        if (id === generation.current) setMsg("Mengunduh AI pengenal tangan. Hanya lama di kunjungan pertama, setelah itu langsung siap…");
+      }, 2500);
       stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: "user" },
         audio: false,
@@ -183,39 +253,19 @@ export function CameraLab({
       }
       video.current.srcObject = stream;
       await video.current.play();
-      const { FilesetResolver, HandLandmarker, FaceLandmarker } =
-        await import("@mediapipe/tasks-vision");
-      const files = await FilesetResolver.forVisionTasks("./wasm");
-      const opts = (key) => ({
-        baseOptions: { modelAssetPath: "./models/" + key + ".task" },
-        runningMode: "VIDEO",
-      });
-      if (targetWord || recognizeWords) bank.current = await loadWordModels();
-      if (alphabet) {
-        const res = await fetch("./alphabet.json");
-        if (!res.ok) throw Error("Alfabet belum tersedia");
-        bank.current = await res.json();
-        [overlapModel, alphabetModels] = await Promise.all([
-          letterObserver.current ? loadOptionalModel("./model-alfabet-tumpang-tindih.json") : null,
-          Promise.all([
-            loadOptionalModel("./models/alfabet-satu-tangan.json"),
-            loadOptionalModel("./models/alfabet-dua-tangan.json"),
-          ]),
-        ]);
+      const [vision, hand, face, words, alpha] = await ready;
+      clearTimeout(slow);
+      var { HandLandmarker, FaceLandmarker } = vision;
+      if (words) bank.current = words;
+      if (alpha) {
+        bank.current = alpha.bank;
+        overlapModel = letterObserver.current ? alpha.overlap : null;
+        alphabetModels = alpha.models;
       }
-      if (!faceOnly)
-        hm = await HandLandmarker.createFromOptions(files, {
-          ...opts("hand"),
-          numHands: 2,
-          ...(alphabet && {minHandDetectionConfidence: .2, minHandPresenceConfidence: .25, minTrackingConfidence: .3}),
-        });
-      if (!alphabet)
-        fm = await FaceLandmarker.createFromOptions(files, {
-          ...opts("face"),
-          numFaces: 1,
-          outputFaceBlendshapes: true,
-          outputFacialTransformationMatrixes: true,
-        });
+      hm = hand;
+      fm = face;
+      // A previous view may have left the shared landmarker in IMAGE mode.
+      if (hm) await hm.setOptions({ runningMode: "VIDEO" });
       if (id !== generation.current) {
         release();
         return;
@@ -409,6 +459,7 @@ export function CameraLab({
       }
       requestAnimationFrame(tick);
     } catch (e) {
+      clearTimeout(slow);
       release();
       if (id === generation.current) {
         setBusy(false);
