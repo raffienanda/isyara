@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
 import { useSwap } from "../anim";
 import { api } from "../api";
-import { Brand, LetterMap, Loading, Spark, go, relTime, useAuth, useLoad } from "../ui";
+import { Brand, LetterMap, Loading, Spark, go, handImg, relTime, useAuth, useLoad } from "../ui";
+import { Bars, Heat, Meter, Sparkline, Stat } from "../charts";
 
 function TopNav({ children }) {
   const { logout } = useAuth();
@@ -69,13 +70,23 @@ export function Kelas() {
           <section className="card" style={{ maxWidth: 620, borderRadius: 40 }}><CreateGroup first onCreated={created} /></section>
         ) : <>
           {attention.length > 0 && <p className="alert alert-error">Belum latihan 3 hari atau lebih: {attention.join(", ")}</p>}
+          <div className="grid" style={{ "--min": "190px", "--gap": "12px" }}>
+            <Stat value={groups.reduce((s, g) => s + g.members, 0)} label="Pelajar" note={"di " + groups.length + " kelompok"} />
+            <Stat value={groups.reduce((s, g) => s + g.activeWeek, 0)} label="Aktif minggu ini" note="Berlatih dalam 7 hari terakhir" />
+            <Stat value={groups.reduce((s, g) => s + g.week.reduce((a, b) => a + b, 0), 0)} unit=" menit" label="Waktu latihan" note="Semua kelompok, 7 hari" />
+            <Stat value={attention.length} label="Perlu disapa" note="Belum latihan 3 hari atau lebih" />
+          </div>
           <h2 className="display h-2">Kelompok saya</h2>
           <div className="grid" style={{ "--min": "320px" }}>
             {groups.map(g => (
               <a key={g.id} href={"#/kelas/" + g.id} className="card stack" style={{ textDecoration: "none", color: "var(--teks)", borderRadius: 36, "--gap": "12px" }}>
                 <div className="row between"><span className={"chip " + (g.kind === "sekolah" ? "chip-mint" : "chip-peach")}>{g.kind === "sekolah" ? "Sekolah" : "Keluarga"}</span><span className="display muted" style={{ letterSpacing: 2 }}>{g.code}</span></div>
                 <strong className="display h-2">{g.name}</strong>
-                <span className="muted">{g.members} pelajar, rata-rata {g.avgMastered} huruf dikuasai</span>
+                <span className="muted">{g.members} pelajar, {g.activeWeek} aktif minggu ini, rata-rata {g.avgMastered} huruf dikuasai</span>
+                <div className="row between" style={{ flexWrap: "nowrap" }}>
+                  <span className="small muted">Menit latihan 7 hari</span>
+                  <Sparkline values={g.week} label={"Menit latihan " + g.name + " 7 hari: " + g.week.join(", ")} w={120} h={30} />
+                </div>
                 <div className="progress"><span style={{ width: (g.avgMastered / 26) * 100 + "%" }} /></div>
               </a>
             ))}
@@ -94,19 +105,69 @@ export function Kelas() {
   );
 }
 
-function Week({ week }) {
-  const max = Math.max(10, ...week.map(w => w.minutes));
-  const names = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+const statusOf = m => m.daysSinceActive === null ? "Belum pernah latihan" : m.daysSinceActive >= 3 ? "Belum latihan " + m.daysSinceActive + " hari" : null;
+
+// Class dashboard: totals, daily minutes, hardest letters, A-Z mastery and a comparison table.
+function ClassOverview({ a, members, current, onPick }) {
+  const idle = a.students - a.activeWeek;
   return (
-    <div role="img" aria-label={"Menit latihan 7 hari terakhir: " + week.map(w => w.minutes).join(", ")} className="row" style={{ alignItems: "flex-end", height: 150, flexWrap: "nowrap", "--gap": "10px" }}>
-      {week.map((w, i) => (
-        <div key={i} className="stack center grow" style={{ "--gap": "4px", height: "100%", justifyContent: "flex-end" }}>
-          <span className="small" style={{ fontWeight: 700 }}>{w.minutes}</span>
-          <span style={{ width: "100%", maxWidth: 40, height: Math.max(6, (w.minutes / max) * 100), borderRadius: "12px 12px 5px 5px", background: w.minutes >= 10 ? "var(--hijau)" : w.minutes ? "#70D6A8" : "var(--pasir)" }} />
-          <span className="small muted">{names[new Date(Date.now() + w.offset * 86400000).getDay()]}</span>
+    <section className="stack" aria-labelledby="ringkas-h" style={{ "--gap": "16px" }}>
+      <div className="row between" style={{ alignItems: "baseline" }}>
+        <h2 id="ringkas-h" className="display h-2">Ringkasan kelas</h2>
+        <span className="small muted">7 hari terakhir</span>
+      </div>
+      <div className="grid" style={{ "--min": "190px", "--gap": "12px" }}>
+        <Stat value={a.activeWeek} unit={"/" + a.students} label="Pelajar aktif" note={idle ? idle + " belum latihan minggu ini" : "Semua pelajar berlatih"} />
+        <Stat value={a.weekMinutes} unit=" menit" label="Waktu latihan kelas" note={"Rata-rata " + (a.students ? Math.round(a.weekMinutes / a.students) : 0) + " menit per pelajar"} />
+        <Stat value={a.avgMastered} unit="/26" label="Rata-rata huruf dikuasai" note={a.levels[0].finished + " pelajar menyelesaikan Level 1"} />
+        <Stat value={a.accuracy ?? "–"} unit={a.accuracy === null ? "" : "%"} label="Huruf tepat" note="Rata-rata kelas, 7 hari" />
+      </div>
+      <div className="grid" style={{ "--min": "340px", "--gap": "16px" }}>
+        <section className="card stack" style={{ "--gap": "14px" }}>
+          <h3 className="display h-3">Menit latihan kelas per hari</h3>
+          <Bars values={a.week} label="Total menit latihan kelas 7 hari terakhir" height={210} />
+        </section>
+        <section className="card stack" style={{ "--gap": "10px" }}>
+          <h3 className="display h-3">Huruf tersulit</h3>
+          {a.hardest.length ? a.hardest.map(h => (
+            <div key={h.letter} className="row" style={{ flexWrap: "nowrap", "--gap": "12px" }}>
+              <img src={handImg(h.letter)} alt="" width="40" height="40" style={{ flex: "none", objectFit: "contain" }} />
+              <strong className="display" style={{ fontSize: "1.3rem", width: 24 }}>{h.letter}</strong>
+              <span className="grow small"><strong>dilewati {h.skips} kali</strong><br /><span className="muted">{h.mastered} dari {a.students} pelajar sudah menguasai</span></span>
+            </div>
+          )) : <p className="muted">Belum ada huruf yang sering dilewati.</p>}
+          <span className="small muted">Bagus untuk bahan latihan bersama di kelas.</span>
+        </section>
+      </div>
+      <section className="card stack" style={{ "--gap": "12px" }}>
+        <h3 className="display h-3">Penguasaan huruf A–Z</h3>
+        <Heat letters={a.letters} total={a.students} label="Jumlah pelajar yang menguasai tiap huruf" />
+      </section>
+      <section className="card stack" style={{ "--gap": "10px" }}>
+        <h3 className="display h-3">Perbandingan pelajar</h3>
+        <div className="table-scroll">
+          <table className="dash-table">
+            <thead><tr><th>Pelajar</th><th>Huruf dikuasai</th><th>Menit 7 hari</th><th>Huruf tepat</th><th>Kata</th><th>Terakhir latihan</th></tr></thead>
+            <tbody>
+              {members.map(m => {
+                const status = statusOf(m);
+                return (
+                  <tr key={m.id} className="pick" tabIndex={0} aria-selected={m.id === current} onClick={() => onPick(m.id)} onKeyDown={e => { if (e.key === "Enter") onPick(m.id); }}>
+                    <td><strong>{m.name}</strong>{status && <><br /><span className="chip chip-peach" style={{ padding: "2px 10px", fontSize: ".75rem" }}>{status}</span></>}</td>
+                    <td style={{ minWidth: 140 }}><div className="row" style={{ flexWrap: "nowrap", "--gap": "8px" }}><span className="progress grow" style={{ height: 8 }}><span style={{ width: (m.mastered.length / 26) * 100 + "%" }} /></span><span className="small">{m.mastered.length}</span></div></td>
+                    <td><div className="row" style={{ flexWrap: "nowrap", "--gap": "8px" }}><Sparkline values={m.week} label={"Menit latihan " + m.name + " 7 hari: " + m.week.join(", ")} /><span className="small">{m.weekMinutes}</span></div></td>
+                    <td>{m.accuracy === null ? "–" : m.accuracy + "%"}</td>
+                    <td>{m.words}</td>
+                    <td className="small muted">{relTime(m.lastActivity)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      ))}
-    </div>
+        <span className="small muted">Klik nama pelajar untuk melihat detail, ringkasan AI, dan catatan.</span>
+      </section>
+    </section>
   );
 }
 
@@ -158,12 +219,20 @@ function StudentPanel({ id, groupId, onChanged }) {
       </div>
 
       <div className="grid" style={{ "--min": "150px", "--gap": "12px" }}>
-        {[[stats.mastered.length + "/26", "huruf dikuasai"], [stats.weekMinutes, "menit minggu ini"], [stats.points, "poin"], [relTime(stats.lastActivity), "terakhir latihan"]].map(([v, l]) => (
+        {[[stats.mastered.length + "/26", "huruf dikuasai"], [stats.weekMinutes, "menit minggu ini"], [stats.accuracy === null ? "–" : stats.accuracy + "%", "huruf tepat (7 hari)"], [stats.wordsWeek, "kata selesai minggu ini"], [stats.points, "poin"], [relTime(stats.lastActivity), "terakhir latihan"]].map(([v, l]) => (
           <div key={l} style={{ padding: 16, borderRadius: 22, background: "var(--krem)" }}><strong className="display" style={{ display: "block", fontSize: "1.7rem" }}>{v}</strong><span className="small muted">{l}</span></div>
         ))}
       </div>
       <div className="stack" style={{ "--gap": "10px" }}><h3 className="display h-3">Peta huruf</h3><LetterMap mastered={stats.mastered} skipped={stats.skipped} /></div>
-      <div className="stack" style={{ "--gap": "10px" }}><h3 className="display h-3">Menit latihan 7 hari</h3><Week week={stats.week} /></div>
+      <div className="grid" style={{ "--min": "280px", "--gap": "18px" }}>
+        <div className="stack" style={{ "--gap": "10px" }}><h3 className="display h-3">Menit latihan 7 hari</h3><Bars values={stats.week.map(w => w.minutes)} label={"Menit latihan " + student.name + " 7 hari terakhir"} height={130} /></div>
+        <div className="stack" style={{ "--gap": "10px" }}><h3 className="display h-3">Kemajuan level</h3>
+          {stats.levelProgress.map(l => <Meter key={l.n} label={"Level " + l.n} value={l.done} max={l.total} />)}
+        </div>
+      </div>
+      {stats.hardest.length > 0 && <div className="stack" style={{ "--gap": "8px" }}><h3 className="display h-3">Huruf yang sering dilewati</h3>
+        <div className="row" style={{ "--gap": "8px" }}>{stats.hardest.map(h => <span key={h.letter} className="chip chip-peach">{h.letter}: dilewati {h.skips} dari {h.tries}</span>)}</div>
+      </div>}
 
       <form onSubmit={addNote} className="field no-print">Catatan untuk {student.name}
         <textarea className="input" rows={3} value={note} onChange={e => setNote(e.target.value)} maxLength={1000} required placeholder="Contoh: Latihan huruf R lagi bersama di rumah." />
@@ -234,7 +303,8 @@ export function KelasDetail({ id, query }) {
             <p className="display green" style={{ fontSize: "5rem", letterSpacing: 10 }}>{g.code}</p>
             <button className="btn btn-primary" onClick={() => copy(link, "tautan2")}>{copied === "tautan2" ? "Tautan disalin" : "Salin tautan undangan"}</button>
           </section>
-        ) : (
+        ) : (<>
+          <ClassOverview a={group.data.analytics} members={members} current={current} onPick={id => { setPicked(id); setTimeout(() => document.getElementById("detail-h")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} />
           <div className="row" style={{ alignItems: "flex-start", "--gap": "22px" }}>
             <aside className="stack no-print" style={{ flex: "1 1 340px", "--gap": "18px" }}>
               <section className="card stack" aria-labelledby="list-h" style={{ borderRadius: 32, "--gap": "10px" }}>
@@ -268,7 +338,7 @@ export function KelasDetail({ id, query }) {
             </aside>
             <StudentPanel key={current} id={current} groupId={g.id} onChanged={() => { setPicked(null); group.reload(); }} />
           </div>
-        )}
+        </>)}
       </main>
     </div>
   );

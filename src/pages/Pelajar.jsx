@@ -3,7 +3,8 @@ import { warmUpCamera } from "../lib/media";
 import { gsap, reduced, useSwap } from "../anim";
 import { api } from "../api";
 import { LEVELS, unlockedLevel } from "../../shared/levels.js";
-import { ArrowRight, Back, Brand, Check, Loading, Lock, Spark, gerakVideo, go, handImg, useAuth, useLoad } from "../ui";
+import { ArrowRight, Back, Brand, Check, LetterMap, Loading, Lock, Spark, gerakVideo, go, handImg, relTime, useAuth, useLoad } from "../ui";
+import { Bars, Meter, Stat } from "../charts";
 
 export function Kenalan() {
   const { user, setUser } = useAuth();
@@ -88,6 +89,67 @@ function GoalRing({ minutes, goal }) {
   );
 }
 
+const RECENT = { kata: "Kata", level: "Level selesai", gerak: "Isyarat kata" };
+
+// Learner dashboard: this week's numbers, daily minutes, level progress, letters to practise.
+function Progresku({ stats, goal, level }) {
+  const pool = LEVELS.filter(l => l.n <= level).flatMap(l => l.words);
+  const practice = ch => pool.filter(w => w.includes(ch)).sort((a, b) => a.length - b.length).slice(0, 3);
+  return (
+    <section className="stack" aria-labelledby="progres-h" style={{ "--gap": "16px" }}>
+      <div className="row between" style={{ alignItems: "baseline" }}>
+        <h2 id="progres-h" className="display h-2">Progresku</h2>
+        <span className="muted small">7 hari terakhir</span>
+      </div>
+      <div className="grid" style={{ "--min": "190px", "--gap": "12px" }}>
+        <Stat value={stats.mastered.length} unit="/26" label="Huruf dikuasai" note={stats.skipped.length ? `${stats.skipped.length} huruf masih sering dilewati` : "Belum ada huruf yang dilewati"} />
+        <Stat value={stats.wordsWeek} label="Kata selesai" note={`${stats.words.length} kata berbeda sejak awal`} />
+        <Stat value={stats.weekMinutes} unit=" menit" label="Waktu latihan" note={`Aktif ${stats.activeDaysThisWeek} dari 7 hari`} />
+        <Stat value={stats.accuracy ?? "–"} unit={stats.accuracy === null ? "" : "%"} label="Huruf tepat" note={stats.attempts ? `dari ${stats.attempts} percobaan huruf` : "Belum ada percobaan minggu ini"} />
+      </div>
+      <div className="grid" style={{ "--min": "340px", "--gap": "16px" }}>
+        <section className="card stack" style={{ "--gap": "14px" }}>
+          <h3 className="display h-3">Menit latihan per hari</h3>
+          <Bars values={stats.week.map(w => w.minutes)} target={goal} label="Menit latihan 7 hari terakhir" />
+        </section>
+        <section className="card stack" style={{ "--gap": "14px" }}>
+          <h3 className="display h-3">Kemajuan level</h3>
+          {stats.levelProgress.map(l => (
+            <Meter key={l.n} label={`Level ${l.n}: ${l.name}`} value={l.done} max={l.total} locked={l.n > level} />
+          ))}
+          <span className="small muted">Angka menunjukkan kata berbeda yang pernah selesai dari seluruh bank kata level itu.</span>
+        </section>
+      </div>
+      <div className="grid" style={{ "--min": "340px", "--gap": "16px" }}>
+        <section className="card stack" style={{ "--gap": "14px" }}>
+          <h3 className="display h-3">Peta huruf A–Z</h3>
+          <div className="on-light" style={{ padding: 14, borderRadius: 18, background: "rgba(243, 246, 244, .96)" }}>
+            <LetterMap mastered={stats.mastered} skipped={stats.skipped} />
+          </div>
+          <h3 className="display h-3" style={{ marginTop: 6 }}>Aktivitas terakhir</h3>
+          {stats.recent.length ? stats.recent.map((r, i) => (
+            <p key={i} className="row between small"><span><strong>{RECENT[r.kind]}</strong> {r.kind === "level" ? r.value : r.value.toUpperCase()}{r.points ? `, +${r.points} poin` : ""}</span><span className="muted">{relTime(r.at)}</span></p>
+          )) : <p className="muted small">Belum ada aktivitas.</p>}
+        </section>
+        <section className="card stack" style={{ "--gap": "12px" }}>
+          <h3 className="display h-3">Perlu dilatih</h3>
+          {stats.hardest.length ? stats.hardest.map(h => {
+            const words = practice(h.letter);
+            return (
+              <div key={h.letter} className="row" style={{ flexWrap: "nowrap", "--gap": "12px" }}>
+                <img src={handImg(h.letter)} alt="" width="44" height="44" style={{ flex: "none", objectFit: "contain" }} />
+                <span className="grow"><strong className="display" style={{ fontSize: "1.3rem" }}>{h.letter}</strong> <span className="small muted">dilewati {h.skips} dari {h.tries} percobaan</span></span>
+                {words.length > 0 && <a className="btn btn-sm btn-neon" href={"#/main/pintar?kata=" + words.join(",")}>Latih</a>}
+              </div>
+            );
+          }) : <p className="muted">Belum ada huruf yang sering dilewati. Lanjutkan levelmu.</p>}
+          <span className="small muted">Tombol Latih membuka 3 kata pendek yang memakai huruf itu.</span>
+        </section>
+      </div>
+    </section>
+  );
+}
+
 export function Beranda() {
   const { user } = useAuth();
   useEffect(() => warmUpCamera(), []);
@@ -150,7 +212,7 @@ export function Beranda() {
             <video className="art" src={gerakVideo("terima kasih", 1)} muted loop autoPlay playsInline aria-hidden="true" style={{ borderRadius: 28, right: 14, bottom: 14, width: 140, height: 140, objectFit: "cover" }} />
             <span className="eyebrow">{stats.gerak.length}/10 kata</span>
             <strong className="display h-2">Kosakata gerak</strong>
-            <span className="muted" style={{ maxWidth: 200 }}>Kata sehari-hari dengan animasi tangan 3D.</span>
+            <span className="muted" style={{ maxWidth: 200 }}>Kata sehari-hari dengan animasi gerak dan penilaian kamera.</span>
           </a>
           <a className="tile-link" href="#/rangkai">
             <img className="art" src={handImg("W")} alt="" />
@@ -166,10 +228,12 @@ export function Beranda() {
           </a>
         </div>
 
+        <Progresku stats={stats} goal={user.goal} level={level} />
+
         <div className="grid" style={{ "--min": "320px" }}>
-          <section className="card-peach stack" style={{ color: "var(--teks)", "--gap": "10px" }}>
+          <section className="card stack" style={{ "--gap": "10px" }}>
             <h2 className="display h-3">Kelompokku</h2>
-            {groups.length ? groups.map(g => <p key={g.id}><strong>{g.name}</strong> · pendamping {g.owner}</p>)
+            {groups.length ? groups.map(g => <p key={g.id}><strong>{g.name}</strong>, pendamping {g.owner}</p>)
               : <p>Belum bergabung ke kelas. <a href="#/profil">Masukkan kode kelas</a> supaya pendamping bisa ikut menyemangati.</p>}
           </section>
           <section className="card stack" style={{ "--gap": "10px" }}>

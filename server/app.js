@@ -229,6 +229,31 @@ function memberRow(m) {
     mastered: s.mastered, skipped: s.skipped, points: s.points, weekMinutes: s.weekMinutes,
     lastActivity: s.lastActivity, daysSinceActive: s.daysSinceActive, levelsDone: s.levelsDone,
     resetRequested: Boolean(m.reset_at),
+    week: s.week.map(w => w.minutes), streak: s.streak, accuracy: s.accuracy, words: s.words.length,
+    activeDays: s.activeDaysThisWeek, letters: s.letters.map(l => ({ letter: l.letter, status: l.status, skips: l.skips })),
+  };
+}
+
+// Class view: totals per day, how many learners are active, and how the class does on each letter.
+function classAnalytics(members) {
+  const n = members.length;
+  const week = Array.from({ length: 7 }, (_, i) => members.reduce((s, m) => s + (m.week[i] || 0), 0));
+  const letters = ALPHABET.map(letter => {
+    let mastered = 0, skips = 0;
+    for (const m of members) for (const l of m.letters) if (l.letter === letter) { if (l.status === "kuasai") mastered++; skips += l.skips; }
+    return { letter, mastered, skips };
+  });
+  const withAccuracy = members.filter(m => m.accuracy !== null);
+  return {
+    students: n,
+    activeWeek: members.filter(m => m.daysSinceActive !== null && m.daysSinceActive < 7).length,
+    weekMinutes: week.reduce((a, b) => a + b, 0),
+    week,
+    avgMastered: n ? Math.round(members.reduce((s, m) => s + m.mastered.length, 0) / n) : 0,
+    accuracy: withAccuracy.length ? Math.round(withAccuracy.reduce((s, m) => s + m.accuracy, 0) / withAccuracy.length) : null,
+    letters,
+    hardest: letters.filter(l => l.skips > 0).sort((a, b) => b.skips - a.skips).slice(0, 5),
+    levels: LEVELS.map(l => ({ n: l.n, name: l.name, finished: members.filter(m => m.levelsDone.includes(l.n)).length })),
   };
 }
 
@@ -241,6 +266,8 @@ api.get("/kelompok", c => {
       return {
         id: g.id, name: g.name, kind: g.kind, code: g.code, members: members.length,
         avgMastered: members.length ? Math.round(members.reduce((s, m) => s + m.mastered.length, 0) / members.length) : 0,
+        activeWeek: members.filter(m => m.daysSinceActive !== null && m.daysSinceActive < 7).length,
+        week: Array.from({ length: 7 }, (_, i) => members.reduce((s, m) => s + (m.week[i] || 0), 0)),
         needsAttention: members.filter(m => m.daysSinceActive === null || m.daysSinceActive >= 3).map(m => m.name),
       };
     }),
@@ -269,7 +296,7 @@ api.get("/kelompok/:id", c => {
   const feed = all(`SELECT u.name, a.kind, a.value, a.created_at FROM aktivitas a JOIN anggota m ON m.user_id = a.user_id
     JOIN users u ON u.id = a.user_id WHERE m.kelompok_id = ? AND a.kind IN ('kata', 'level', 'gerak') ORDER BY a.created_at DESC LIMIT 8`, g.id);
   const companions = all("SELECT u.name FROM pengurus p JOIN users u ON u.id = p.user_id WHERE p.kelompok_id = ?", g.id).map(r => r.name);
-  return c.json({ group: { id: g.id, name: g.name, kind: g.kind, code: g.code, companions }, members, feed });
+  return c.json({ group: { id: g.id, name: g.name, kind: g.kind, code: g.code, companions }, members, feed, analytics: classAnalytics(members) });
 });
 
 api.patch("/kelompok/:id", async c => {

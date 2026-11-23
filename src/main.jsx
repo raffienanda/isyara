@@ -63,7 +63,7 @@ function Router() {
 
 createRoot(document.getElementById("root")).render(
   <AuthProvider>
-    <a className="skip" href="#isi" onClick={e => { e.preventDefault(); document.getElementById("isi")?.focus(); }}>Lewati ke isi</a>
+    <a className="skip-link" href="#isi" onClick={e => { e.preventDefault(); document.getElementById("isi")?.focus(); }}>Lewati ke isi</a>
     <PageIn><Router /></PageIn>
   </AuthProvider>,
 );
