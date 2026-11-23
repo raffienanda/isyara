@@ -61,7 +61,9 @@ cd ~/apps/isyara && git pull && PATH=~/.nvm/versions/node/v24.18.0/bin:$PATH npm
 systemctl --user restart isyara
 ```
 
-Alamat publik sementara memakai Cloudflare quick tunnel. Lihat alamatnya dengan `journalctl --user -u isyara-tunnel | grep trycloudflare`. Alamat ini berubah setiap tunnel dinyalakan ulang. Setelah domain `.my.id` siap, tambahkan Public Hostname `http://localhost:8797` di dashboard Cloudflare Zero Trust (tunnel yang sudah ada), lalu matikan tunnel sementara: `systemctl --user disable --now isyara-tunnel`.
+Alamat publik: **https://isyara.web.id**. Domain terdaftar di DomaiNesia dengan nameserver Cloudflare. Trafik masuk lewat tunnel Cloudflare `ifw` yang sudah berjalan di hp-server (`cloudflared.service`), dengan route Published application `isyara.web.id` ke `http://localhost:8797`. Sertifikat HTTPS dikelola Cloudflare (Universal SSL).
+
+Cadangan kalau domain bermasalah: nyalakan quick tunnel dengan `systemctl --user start isyara-tunnel`, lalu lihat alamat sementaranya dengan `journalctl --user -u isyara-tunnel | grep trycloudflare`.
 
 ## Deploy dengan Docker + Cloudflare Tunnel (alternatif)
 
@@ -75,7 +77,7 @@ Aplikasi hanya mendengarkan di `127.0.0.1:8787`. Arahkan Cloudflare Tunnel ke sa
 
 ```yaml
 ingress:
-  - hostname: isyara.namadomain.my.id
+  - hostname: isyara.web.id
     service: http://localhost:8787
   - service: http_status:404
 ```
