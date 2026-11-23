@@ -43,7 +43,7 @@ export function countUp(el, to, duration = 1.2) {
   gsap.to(state, { v: to, duration, ease: "power2.out", onUpdate: () => { el.textContent = String(Math.round(state.v)); } });
 }
 
-const PAPER = ["#FFD66B", "#F28C38", "#FFF6E5", "#70D6A8", "#70FFD2", "#1F6B4A"];
+const PAPER = ["#F6C445", "#E2603F", "#F3F6F4", "#8BE8C1", "#8BE8C1", "#1C7C54"];
 
 function piece(color, size) {
   const el = document.createElement("span");

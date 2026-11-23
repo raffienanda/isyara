@@ -417,12 +417,12 @@ export function CameraLab({
                 ctx.lineTo(group[end].x * c.width, group[end].y * c.height);
               }
               ctx.lineWidth = 5 * scale;
-              ctx.strokeStyle = "#17372c";
+              ctx.strokeStyle = "#0F3B2E";
               ctx.stroke();
               ctx.lineWidth = 2.5 * scale;
-              ctx.strokeStyle = "#70ffd2";
+              ctx.strokeStyle = "#8BE8C1";
               ctx.stroke();
-              ctx.fillStyle = "#ffeb80";
+              ctx.fillStyle = "#F6C445";
               for (const q of group) {
                 ctx.beginPath();
                 ctx.arc(q.x * c.width, q.y * c.height, 3 * scale, 0, Math.PI * 2);
@@ -431,7 +431,7 @@ export function CameraLab({
             }
             const points = face?.faceLandmarks[0];
             if (points) {
-              ctx.strokeStyle = "#ffe575";
+              ctx.strokeStyle = "#F6C445";
               ctx.lineWidth = 2;
               for (const contour of [
                 [70, 63, 105, 66, 107],

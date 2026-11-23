@@ -23,4 +23,4 @@ Ringkasan dan latihan pintar
 Google Gemini API, dipanggil dari server dengan data progres tanpa nama dan tanpa gambar.
 
 Antarmuka
-React (MIT), Lucide (ISC), Hono (MIT), GSAP (lisensi standar GreenSock, gratis), font Atkinson Hyperlegible Next (OFL) dan Bricolage Grotesque (OFL) melalui Fontsource. Background potongan kertas dibuat untuk ISYARA dengan model gambar AI. Lisensi tambahan di direktori licenses.
+React (MIT), Lucide (ISC), Hono (MIT), GSAP (lisensi standar GreenSock, gratis), font Atkinson Hyperlegible Next (OFL) dan Bricolage Grotesque (OFL) melalui Fontsource. Latar belakang dibuat dengan CSS (gradasi), tanpa gambar. Lisensi tambahan di direktori licenses.

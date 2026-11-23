@@ -1,14 +1,14 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#FFF6E5}</style></head>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#F7F9F8}</style></head>
 <body><canvas id="c" width="720" height="720"></canvas>
 <script>
 // Renders one WL-BISINDO landmark clip as a figure with head, body, arms and two colour-coded hands.
 const ASPECT = 16 / 9;            // source videos are 16:9; x is stretched to keep the hand shape true
 const FPS = 30, SRC_FPS = 18, HOLD_START = 0.8, HOLD_END = 0.9;
 const C = {
-  bg: "#FFF6E5", glow: "#E4F2E6", body: "#E8D6BC", bodyLine: "#C9B18F", skin: "#F2D3B3", skinLine: "#C99B72",
-  hair: "#3B2B22", right: "#2E9E6B", rightLine: "#15382A", left: "#F28C38", leftLine: "#8A3410",
-  text: "#15382A", chip: "#15382A",
+  bg: "#F7F9F8", glow: "#E3F1EA", body: "#D9E6DF", bodyLine: "#AFC4B9", skin: "#F2D3B3", skinLine: "#C99B72",
+  hair: "#3B2B22", right: "#1C7C54", rightLine: "#0F3B2E", left: "#E2603F", leftLine: "#9C3A22",
+  text: "#0F3B2E", chip: "#0F3B2E",
 };
 const canvas = document.getElementById("c"), g = canvas.getContext("2d");
 const has = h => h && h.some(p => p[0] || p[1]);
@@ -190,7 +190,7 @@ function draw(data, f, phase, progress, opts = {}) {
   const label = { awal: "1  Awal", gerak: "2  Gerak", akhir: "3  Akhir" }[phase];
   const tw = g.measureText(label).width + 40;
   g.fillStyle = phase === "gerak" ? C.right : C.chip; roundRect(24, 24, tw, 48, 24); g.fill();
-  g.fillStyle = "#FFF6E5"; g.fillText(label, 44, 49);
+  g.fillStyle = "#F7F9F8"; g.fillText(label, 44, 49);
   const legend = data.tracks.length === 2 ? [["Tangan utama", C.right], ["Tangan bantu", C.left]] : [["Tangan utama", C.right]];
   g.font = "600 21px 'Segoe UI', system-ui, sans-serif";
   let x = W - 24;
@@ -199,7 +199,7 @@ function draw(data, f, phase, progress, opts = {}) {
     g.fillStyle = C.text; g.fillText(txt, x, 48);
     g.beginPath(); g.arc(x - 16, 48, 9, 0, Math.PI * 2); g.fillStyle = col; g.fill(); x -= 46;
   }
-  g.fillStyle = "rgba(21,56,42,.12)"; roundRect(24, W - 34, W - 48, 10, 5); g.fill();
+  g.fillStyle = "rgba(15,59,46,.12)"; roundRect(24, W - 34, W - 48, 10, 5); g.fill();
   g.fillStyle = C.right; roundRect(24, W - 34, Math.max(10, (W - 48) * progress), 10, 5); g.fill();
 }
 function roundRect(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }

@@ -27,7 +27,7 @@ export function Main({ id, query }) {
   const { user } = useAuth();
   const level = LEVELS.find(l => String(l.n) === id);
   const words = useMemo(() => wordsFor(id, query, user), [id, query, user]);
-  const title = level ? `Level ${level.n} · ${level.name}` : id === "nama" ? "Eja namaku" : "Latihan pintar";
+  const title = level ? `Level ${level.n}, ${level.name}` : id === "nama" ? "Eja namaku" : "Latihan pintar";
   const exit = level ? "level" : "beranda";
 
   const [wi, setWi] = useState(0);
@@ -202,7 +202,7 @@ export function Main({ id, query }) {
         <section className="half bg-panel stack" aria-label="Contoh huruf" style={{ overflow: "hidden" }}>
           <div className="topbar" style={{ position: "relative", zIndex: 2 }}>
             <a className="back" href={"#/" + exit}><ArrowLeft />Keluar</a>
-            <span className="muted" style={{ fontWeight: 700 }}>{title} · Kata {wi + 1}/{words.length}</span>
+            <span className="muted" style={{ fontWeight: 700 }}>{title}. Kata {wi + 1} dari {words.length}</span>
           </div>
           <div className="grow" style={{ position: "relative", display: "grid", placeItems: "center", minHeight: 220 }}>
             <span className="big-letter" aria-hidden="true">{letter}</span>
@@ -223,7 +223,7 @@ export function Main({ id, query }) {
 
         <section className="half" aria-label="Kamera" style={{ minHeight: 520 }}>
           <CameraLab alphabet autoStart expectedLetter={letter} onLetterFrame={observe} />
-          <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", transition: "box-shadow .15s ease", boxShadow: `inset 0 0 0 ${Math.round(hold / 100 * 10)}px rgba(112,255,210,${(hold / 100).toFixed(2)})` }} />
+          <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 2, pointerEvents: "none", transition: "box-shadow .15s ease", boxShadow: `inset 0 0 0 ${Math.round(hold / 100 * 10)}px rgba(139,232,193,${(hold / 100).toFixed(2)})` }} />
           {flash && (
             <div key={flash.n} ref={flashRef} aria-hidden="true" style={{ position: "absolute", left: "50%", top: "42%", zIndex: 4, marginLeft: -90, marginTop: -90, width: 180, height: 180, borderRadius: "50%", background: "var(--neon)", color: "var(--tua)", display: "grid", placeItems: "center", opacity: 0, pointerEvents: "none" }}>
               <span className="display" style={{ fontSize: "4.4rem", display: "flex", alignItems: "center", gap: 6 }}>{flash.letter}<Check size={54} /></span>
@@ -239,7 +239,7 @@ export function Main({ id, query }) {
               <span role="status" style={{ fontWeight: 700 }}>{hint}</span>
               <span className="display" style={{ fontSize: "1.6rem", color: "var(--hijau)" }}>{hold}%</span>
             </div>
-            <div className="progress" style={{ background: "rgba(255,246,229,.2)" }} aria-hidden="true"><span style={{ width: hold + "%", background: hold > 60 ? "var(--neon)" : "var(--kuning)" }} /></div>
+            <div className="progress" style={{ background: "rgba(243,246,244,.2)" }} aria-hidden="true"><span style={{ width: hold + "%", background: hold > 60 ? "var(--neon)" : "var(--kuning)" }} /></div>
             {fingers && handCount > 0 && <>
               <span className="chip" style={{ alignSelf: "flex-start", background: "var(--neon)", color: "var(--tua)" }}><Spark size={16} />Pelatih AI · posisi tiap jari (perkiraan)</span>
               <div className="fingers">

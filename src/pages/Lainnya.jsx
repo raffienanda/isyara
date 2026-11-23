@@ -10,7 +10,7 @@ function Banner({ back, backLabel, title, accent, children, compact }) {
     <header className="bg-banner on-dark banner" style={compact ? { paddingBottom: "clamp(20px, 4vh, 40px)" } : undefined}>
       <div className="container" style={compact ? { gap: 8, paddingTop: 12 } : undefined}>
         <Back to={back}>{backLabel}</Back>
-        <h1 className={"display " + (compact ? "h-2" : "h-1")} style={compact ? { fontSize: "clamp(2rem, 6vh, 3.4rem)" } : undefined}>{title} {accent && <span className="accent">{accent}</span>}</h1>
+        <h1 className={"display " + (compact ? "h-2" : "h-1")} style={compact ? { fontSize: "clamp(2rem, 6vh, 3.4rem)" } : undefined}>{title}{accent ? " " + accent : ""}</h1>
         {children}
       </div>
     </header>
@@ -37,7 +37,7 @@ export function Kamus() {
             const on = ch === picked, done = mastered.includes(ch);
             return (
               <button key={ch} onClick={() => setPicked(ch)} aria-pressed={on} aria-label={"Huruf " + ch + (done ? ", sudah dikuasai" : "")} className="stack center"
-                style={{ "--gap": "4px", padding: "12px 6px", borderRadius: 24, border: "3px solid " + (on ? "var(--oranye)" : done ? "var(--hijau)" : "var(--garis)"), background: done && !on ? "var(--hijau)" : "var(--putih)", color: done && !on ? "var(--krem)" : "var(--teks)" }}>
+                style={{ "--gap": "4px", padding: "12px 6px", borderRadius: 24, border: "3px solid " + (on ? "var(--tua)" : done ? "var(--hijau)" : "var(--garis)"), background: done && !on ? "var(--hijau)" : "var(--putih)", boxShadow: on ? "0 0 0 4px rgba(15, 59, 46, .15)" : undefined, color: done && !on ? "var(--krem)" : "var(--teks)" }}>
                 <img src={handImg(ch)} alt="" width="64" height="64" style={{ objectFit: "contain" }} loading="lazy" />
                 <span className="display" style={{ fontSize: "1.6rem" }}>{ch}</span>
               </button>
@@ -113,11 +113,11 @@ export function Kosakata() {
               <span className="eyebrow">{item.group}</span>
               <h1 className="display green" style={{ fontSize: "clamp(2.2rem, 6vh, 3.6rem)", textTransform: "uppercase" }}>{item.word}</h1>
               <p className="muted">{item.meaning}</p>
-              <p style={{ padding: "12px 16px", borderRadius: 20, background: "var(--putih)" }}><span className="small muted" style={{ fontWeight: 700 }}>CONTOH KALIMAT</span><br /><strong>{item.example}</strong></p>
+              <p style={{ padding: "12px 16px", borderRadius: 20, background: "var(--putih)" }}><span className="small muted" style={{ fontWeight: 700 }}>Contoh kalimat</span><br /><strong>{item.example}</strong></p>
             </div>
           </div>
           {videoTools}
-          <div role="status" aria-live="polite" className="stack" style={{ "--gap": "6px", padding: "16px 20px", borderRadius: 24, background: notice ? "var(--mint)" : "var(--putih)", boxShadow: "0 10px 30px rgba(21,56,42,.08)" }}>
+          <div role="status" aria-live="polite" className="stack" style={{ "--gap": "6px", padding: "16px 20px", borderRadius: 24, background: notice ? "var(--mint)" : "var(--putih)", boxShadow: "0 10px 30px rgba(15,59,46,.08)" }}>
             <span className="eyebrow">{notice ? "Berhasil" : "Petunjuk kamera"}</span>
             <strong>{notice || status || "Hadapkan wajah dan tangan ke kamera."}</strong>
           </div>
@@ -161,7 +161,7 @@ export function Kosakata() {
             <h2 className="display green" style={{ fontSize: "clamp(2.2rem, 5.4vh, 3.2rem)", textTransform: "uppercase" }}>{item.word}</h2>
             <p className="muted">{item.meaning}</p>
             <div style={{ padding: "14px 20px", borderRadius: 24, background: "var(--krem)" }}>
-              <span className="small muted" style={{ fontWeight: 700 }}>CONTOH KALIMAT</span>
+              <span className="small muted" style={{ fontWeight: 700 }}>Contoh kalimat</span>
               <p className="display" style={{ fontSize: "1.3rem", marginTop: 4 }}>{item.example}</p>
             </div>
             <div className="stack" style={{ "--gap": "6px" }}>
@@ -176,9 +176,9 @@ export function Kosakata() {
                   </React.Fragment>
                 ))}
               </div>
-              <p className="small muted"><b style={{ color: "#2E9E6B" }}>Hijau</b> tangan utama · <b style={{ color: "var(--oranye-teks)" }}>oranye</b> tangan bantu · garis putus-putus = arah gerak</p>
+              <p className="small muted"><b style={{ color: "var(--hijau)" }}>Hijau</b> tangan utama, <b style={{ color: "var(--oranye-teks)" }}>koral</b> tangan bantu, garis putus-putus arah gerak.</p>
             </div>
-            <button className="btn btn-primary btn-lg" style={{ alignSelf: "flex-start", maxWidth: "100%", whiteSpace: "normal" }} onClick={() => { setCamera(true); setNotice(""); scrollTo(0, 0); }}>Coba dengan kamera <ArrowRight /></button>
+            <button className="btn btn-primary btn-lg" style={{ alignSelf: "flex-start", maxWidth: "100%" }} onClick={() => { setCamera(true); setNotice(""); scrollTo(0, 0); }}>Coba dengan kamera <ArrowRight /></button>
           </div>
         </section>
       </main>
@@ -233,7 +233,7 @@ export function Profil({ query }) {
             <span className="display" style={{ display: "grid", placeItems: "center", width: 104, height: 104, borderRadius: "50%", background: "var(--krem)", color: "var(--hijau)", fontSize: "3rem" }}>{user.name[0]}</span>
             <div className="grow"><h1 className="display h-1">{user.name}</h1><span className="muted">@{user.username} · {user.role === "pelajar" ? "Pelajar" : "Pendamping"}</span></div>
             {stats && <div className="row">{[[stats.points, "poin"], [stats.mastered.length, "huruf"], [stats.streak, "hari beruntun"]].map(([v, l]) => (
-              <span key={l} className="stack center" style={{ padding: "12px 18px", borderRadius: 24, background: "rgba(21,56,42,.55)", "--gap": "0" }}><strong className="display accent" style={{ fontSize: "1.9rem" }}>{v}</strong><span className="small">{l}</span></span>))}</div>}
+              <span key={l} className="stack center" style={{ padding: "12px 18px", borderRadius: 24, background: "rgba(15,59,46,.55)", "--gap": "0" }}><strong className="display accent" style={{ fontSize: "1.9rem" }}>{v}</strong><span className="small">{l}</span></span>))}</div>}
           </div>
         </div>
       </header>

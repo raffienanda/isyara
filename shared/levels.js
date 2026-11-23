@@ -11,7 +11,7 @@ export const LEVELS = [
     words: ["MAKAN", "KAMU", "NASI", "SAPU", "MINUM", "PIKNIK", "SUSU", "KAKAK"] },
   { n: 4, name: "Gerak & tantangan", letters: "TWXYJZ",
     desc: "Huruf J dan Z memakai gerakan. Kata di level ini lebih panjang.",
-    words: ["TEMAN", "WAKTU", "JAWAB", "KAYU", "ZEBRA", "JUJUR", "TIDUR", "TOPI"] },
+    words: ["TEMAN", "Waktu", "JAWAB", "KAYU", "ZEBRA", "JUJUR", "TIDUR", "TOPI"] },
 ];
 
 export const TWO_HANDED = new Set("ABDFGHKMNPQSTWXY");
@@ -20,16 +20,16 @@ export const ALPHABET = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 export const WORD_POINTS = 10;
 
 export const GERAK = [
-  { word: "saya", group: "DIRI", meaning: "Menunjuk diri sendiri.", example: "Saya Budi." },
-  { word: "teman", group: "ORANG", meaning: "Orang yang dekat dan sering bermain atau belajar bersama.", example: "Sari teman saya." },
-  { word: "tuli", group: "ORANG", meaning: "Identitas komunitas orang Tuli yang memakai bahasa isyarat.", example: "Saya Tuli." },
-  { word: "makan", group: "KEGIATAN", meaning: "Memasukkan makanan ke mulut.", example: "Ayo makan." },
-  { word: "belajar", group: "KEGIATAN", meaning: "Mencari tahu dan berlatih sesuatu.", example: "Kita belajar bersama." },
-  { word: "hari", group: "WAKTU", meaning: "Satuan waktu dari pagi sampai malam.", example: "Hari ini cerah." },
-  { word: "terima kasih", group: "SOPAN SANTUN", meaning: "Ungkapan rasa senang karena dibantu.", example: "Terima kasih, Bu Guru." },
-  { word: "maaf", group: "SOPAN SANTUN", meaning: "Ungkapan menyesal atau minta izin.", example: "Maaf, saya terlambat." },
-  { word: "apa", takes: 1, group: "KATA TANYA", meaning: "Menanyakan benda atau hal.", example: "Ini apa?" },
-  { word: "siapa", group: "KATA TANYA", meaning: "Menanyakan orang.", example: "Siapa namamu?" },
+  { word: "saya", group: "Diri", meaning: "Menunjuk diri sendiri.", example: "Saya Budi." },
+  { word: "teman", group: "Orang", meaning: "Orang yang dekat dan sering bermain atau belajar bersama.", example: "Sari teman saya." },
+  { word: "tuli", group: "Orang", meaning: "Identitas komunitas orang Tuli yang memakai bahasa isyarat.", example: "Saya Tuli." },
+  { word: "makan", group: "Kegiatan", meaning: "Memasukkan makanan ke mulut.", example: "Ayo makan." },
+  { word: "belajar", group: "Kegiatan", meaning: "Mencari tahu dan berlatih sesuatu.", example: "Kita belajar bersama." },
+  { word: "hari", group: "Waktu", meaning: "Satuan waktu dari pagi sampai malam.", example: "Hari ini cerah." },
+  { word: "terima kasih", group: "Sopan santun", meaning: "Ungkapan rasa senang karena dibantu.", example: "Terima kasih, Bu Guru." },
+  { word: "maaf", group: "Sopan santun", meaning: "Ungkapan menyesal atau minta izin.", example: "Maaf, saya terlambat." },
+  { word: "apa", takes: 1, group: "Kata tanya", meaning: "Menanyakan benda atau hal.", example: "Ini apa?" },
+  { word: "siapa", group: "Kata tanya", meaning: "Menanyakan orang.", example: "Siapa namamu?" },
 ];
 
 export function lettersUpTo(level) {

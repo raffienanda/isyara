@@ -61,7 +61,7 @@ export function Kelas() {
         <div className="container" style={{ gap: 26 }}>
           <TopNav />
           <div><h1 className="display h-1">Halo, {user.name}</h1>
-            <p className="muted" style={{ marginTop: 8 }}>{groups.length} kelompok · {groups.reduce((s, g) => s + g.members, 0)} pelajar{attention.length ? ` · ${attention.length} pelajar perlu disapa` : ""}</p></div>
+            <p className="muted" style={{ marginTop: 8 }}>{groups.length} kelompok, {groups.reduce((s, g) => s + g.members, 0)} pelajar{attention.length ? `. ${attention.length} pelajar perlu disapa.` : "."}</p></div>
         </div>
       </header>
       <main id="isi" className="container stack" style={{ paddingTop: 32, "--gap": "26px" }}>
@@ -73,9 +73,9 @@ export function Kelas() {
           <div className="grid" style={{ "--min": "320px" }}>
             {groups.map(g => (
               <a key={g.id} href={"#/kelas/" + g.id} className="card stack" style={{ textDecoration: "none", color: "var(--teks)", borderRadius: 36, "--gap": "12px" }}>
-                <div className="row between"><span className={"chip " + (g.kind === "sekolah" ? "chip-mint" : "chip-peach")}>{g.kind.toUpperCase()}</span><span className="display muted" style={{ letterSpacing: 2 }}>{g.code}</span></div>
+                <div className="row between"><span className={"chip " + (g.kind === "sekolah" ? "chip-mint" : "chip-peach")}>{g.kind === "sekolah" ? "Sekolah" : "Keluarga"}</span><span className="display muted" style={{ letterSpacing: 2 }}>{g.code}</span></div>
                 <strong className="display h-2">{g.name}</strong>
-                <span className="muted">{g.members} pelajar · rata-rata {g.avgMastered} huruf dikuasai</span>
+                <span className="muted">{g.members} pelajar, rata-rata {g.avgMastered} huruf dikuasai</span>
                 <div className="progress"><span style={{ width: (g.avgMastered / 26) * 100 + "%" }} /></div>
               </a>
             ))}
@@ -144,13 +144,13 @@ function StudentPanel({ id, groupId, onChanged }) {
 
       <div ref={summaryRef} className="card-tua stack" style={{ "--gap": "14px", borderRadius: 28 }}>
         <div className="row between">
-          <span className="row" style={{ "--gap": "8px", color: "var(--neon)", fontWeight: 700 }}><Spark size={20} />RINGKASAN AI · MINGGU INI</span>
+          <span className="row" style={{ "--gap": "8px", color: "var(--neon)", fontWeight: 700 }}><Spark size={20} />Ringkasan AI minggu ini</span>
           <button className="btn btn-neon btn-sm no-print" onClick={makeSummary} disabled={busy}>{busy ? "Membuat ringkasan…" : summary ? "Perbarui ringkasan" : "Buat ringkasan AI"}</button>
         </div>
         {summary ? <>
           <p style={{ fontSize: "1.15rem" }}>{summary.text}</p>
           <div className="stack" style={{ "--gap": "6px" }}>
-            <span className="small" style={{ fontWeight: 700, color: "var(--kuning)" }}>SARAN KEGIATAN</span>
+            <span className="small" style={{ fontWeight: 700, color: "var(--kuning)" }}>Saran kegiatan</span>
             {summary.tips.map(t => <span key={t} className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start", "--gap": "10px" }}><span style={{ flex: "none", width: 8, height: 8, marginTop: 10, borderRadius: "50%", background: "var(--kuning)" }} />{t}</span>)}
           </div>
           <span className="small muted">{summary.source === "ai" ? "Dibuat Gemini" : "Dibuat dari templat (AI belum tersedia)"} dari data progres saja, tanpa nama dan gambar kamera · {relTime(summary.created_at)}. Periksa sebelum dibagikan.</span>
@@ -210,9 +210,9 @@ export function KelasDetail({ id, query }) {
           <TopNav><a className="btn btn-outline-light btn-sm" href="#/kelas">Semua kelompok</a></TopNav>
           <div className="row between" style={{ alignItems: "flex-end" }}>
             <div><span className="eyebrow">{g.kind === "sekolah" ? "Kelas" : "Kelompok keluarga"}</span><h1 className="display h-1">{g.name}</h1>
-              <span className="muted">{members.length} pelajar · pendamping: {g.companions.join(", ")}</span></div>
+              <span className="muted">{members.length} pelajar. Pendamping: {g.companions.join(", ")}</span></div>
             <div className="row on-light" style={{ padding: "12px 12px 12px 22px", borderRadius: 999, background: "var(--krem)", "--gap": "12px" }}>
-              <span className="stack" style={{ "--gap": "0" }}><span className="small muted" style={{ fontWeight: 700 }}>KODE KELAS</span><strong className="display" style={{ fontSize: "1.8rem", letterSpacing: 4 }}>{g.code}</strong></span>
+              <span className="stack" style={{ "--gap": "0" }}><span className="small muted" style={{ fontWeight: 700 }}>Kode kelas</span><strong className="display" style={{ fontSize: "1.8rem", letterSpacing: 4 }}>{g.code}</strong></span>
               <button className="btn btn-primary btn-sm" onClick={() => copy(link, "tautan")}>{copied === "tautan" ? "Tautan disalin" : "Salin tautan undangan"}</button>
             </div>
           </div>
@@ -247,7 +247,7 @@ export function KelasDetail({ id, query }) {
                       <span className="stack grow" style={{ "--gap": "4px" }}>
                         <span className="row between"><strong>{m.name}</strong><span className="small muted">{relTime(m.lastActivity)}</span></span>
                         <span className="progress" style={{ height: 10 }}><span style={{ width: (m.mastered.length / 26) * 100 + "%", background: alert ? "var(--oranye)" : "var(--hijau)" }} /></span>
-                        <span className="small muted">{m.mastered.length}/26 huruf · {m.weekMinutes} menit minggu ini</span>
+                        <span className="small muted">{m.mastered.length}/26 huruf, {m.weekMinutes} menit minggu ini</span>
                       </span>
                     </button>
                   );

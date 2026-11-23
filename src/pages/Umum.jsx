@@ -37,7 +37,7 @@ export function Intro() {
     <div ref={root} data-manual className="screen fit bg-intro on-dark" style={{ position: "relative", overflow: "hidden" }}>
       {INTRO_HANDS.map(h => (
         <span key={h.ch} className="intro-hand" aria-hidden="true" style={{ position: "absolute", ...h.style, zIndex: 1 }}>
-          <img src={`./alfabet-3d/${h.ch}-render.webp`} alt="" style={{ width: "100%", transform: `rotate(${h.rot}deg)`, filter: "drop-shadow(0 18px 24px rgba(21,56,42,.35))" }} />
+          <img src={`./alfabet-3d/${h.ch}-render.webp`} alt="" style={{ width: "100%", transform: `rotate(${h.rot}deg)`, filter: "drop-shadow(0 18px 24px rgba(15,59,46,.35))" }} />
         </span>
       ))}
       <header className="topbar intro-fade" style={{ position: "relative", zIndex: 2 }}>
@@ -46,12 +46,12 @@ export function Intro() {
         <a className="btn btn-cream" href={"#/" + (user ? home : "masuk?tab=masuk")}>{user ? "Buka ISYARA" : "Masuk"}</a>
       </header>
       <main id="isi" className="stack center grow" style={{ "--gap": "clamp(12px, 2.6vh, 26px)", position: "relative", zIndex: 2, padding: "clamp(4px, 2vh, 24px) 24px clamp(16px, 5vh, 64px)" }}>
-        <span className="chip chip-glass intro-fade">BISINDO · Bahasa Isyarat Indonesia</span>
+        <span className="chip chip-glass intro-fade">Bahasa Isyarat Indonesia (BISINDO)</span>
         <h1 className="display h-hero" style={{ maxWidth: 900, fontSize: "clamp(2.6rem, min(7vw, 10.5vh), 5.6rem)" }}>
           <span style={{ display: "block", overflow: "hidden", paddingBottom: 6 }}><span className="intro-line" style={{ display: "inline-block" }}>Eja jari BISINDO</span></span>
-          <span style={{ display: "block", overflow: "hidden", paddingBottom: 10 }}><span className="intro-line accent" style={{ display: "inline-block" }}>pakai tanganmu.</span></span>
+          <span style={{ display: "block", overflow: "hidden", paddingBottom: 10 }}><span className="intro-line" style={{ display: "inline-block" }}>pakai tanganmu.</span></span>
         </h1>
-        <p className="intro-fade" style={{ fontSize: "1.2rem", maxWidth: 560, color: "#E4F3E9" }}>Lihat tangan 3D, tirukan bentuknya di depan webcam, dan hurufnya langsung muncul di layar.</p>
+        <p className="intro-fade" style={{ fontSize: "1.2rem", maxWidth: 560, color: "#D5E6DE" }}>Lihat tangan 3D, tirukan bentuknya di depan webcam, dan hurufnya langsung muncul di layar.</p>
         <div className="row intro-fade" style={{ justifyContent: "center" }}>
           <a className="btn btn-cream btn-lg" href={"#/" + home}>Ayo mulai <ArrowRight /></a>
           {!user && <a className="btn btn-outline-light btn-lg" href="#/masuk?tab=masuk">Coba demo</a>}
@@ -62,7 +62,7 @@ export function Intro() {
         </ul>
       </main>
       <footer className="row center intro-fade" style={{ position: "relative", zIndex: 2, padding: "0 24px clamp(12px, 2.6vh, 26px)" }}>
-        <p className="chip" style={{ background: "var(--tua)", color: "#E4F3E9", fontWeight: 400 }}><Lock /> Kamera diproses di perangkatmu. Tidak ada video yang dikirim atau disimpan.</p>
+        <p className="chip" style={{ background: "var(--tua)", color: "#D5E6DE", fontWeight: 400 }}><Lock /> Kamera diproses di perangkatmu. Tidak ada video yang dikirim atau disimpan.</p>
       </footer>
     </div>
   );
@@ -88,7 +88,7 @@ function DemoQuick() {
     <section aria-labelledby="demo-h" className="stack" style={{ width: "100%", padding: 22, borderRadius: 32, background: "var(--hijau)", color: "var(--krem)", "--gap": "14px" }}>
       <div className="row between" style={{ "--gap": "8px" }}>
         <h2 id="demo-h" className="display" style={{ fontSize: "1.5rem" }}>Coba langsung</h2>
-        <span className="chip chip-kuning">Akun demo · tanpa sandi</span>
+        <span className="chip chip-kuning">Tanpa kata sandi</span>
       </div>
       <div className="grid" style={{ "--min": "280px", "--gap": "10px" }}>
         <button className="btn btn-cream btn-lg" disabled={Boolean(busy)} onClick={() => enter("pelajar")} style={{ fontSize: "1.05rem", whiteSpace: "normal", padding: "8px 18px" }}>
@@ -128,12 +128,12 @@ export function Masuk({ query }) {
       <header className="topbar" style={{ paddingBlock: "clamp(10px, 2vh, 20px)" }}><Back to="">Kembali</Back><Brand /><span style={{ width: 90 }} /></header>
       <main id="isi" className="masuk-grid grow">
         <section className="stack" style={{ width: "100%", "--gap": "clamp(12px, 2.4vh, 22px)" }}>
-          <h1 className="display h-1 green masuk-hello" style={{ fontSize: "clamp(2.4rem, min(5vw, 8vh), 4.2rem)" }}>{daftar ? <>Ayo mulai<br /><span style={{ color: "var(--oranye-teks)" }}>berlatih isyarat.</span></> : <>Halo lagi!<br /><span style={{ color: "var(--oranye-teks)" }}>Lanjutkan latihanmu.</span></>}</h1>
+          <h1 className="display h-1 green masuk-hello" style={{ fontSize: "clamp(2.4rem, min(5vw, 8vh), 4.2rem)" }}>{daftar ? <>Ayo mulai<br />berlatih isyarat.</> : <>Halo lagi!<br />Lanjutkan latihanmu.</>}</h1>
           <p className="muted masuk-hello" style={{ fontSize: "1.1rem", maxWidth: 460 }}>Satu akun untuk menyimpan huruf yang sudah kamu kuasai. Guru atau orang tua bisa memantau lewat kode kelas.</p>
           <DemoQuick />
           <p className="small muted row" style={{ "--gap": "8px", flexWrap: "nowrap", alignItems: "flex-start" }}><Lock /> Kami hanya menyimpan nama, kelas, dan progres. Gambar kamera tidak pernah disimpan.</p>
         </section>
-        <form onSubmit={submit} className="card stack" style={{ width: "100%", maxWidth: 540, "--gap": "clamp(10px, 1.8vh, 16px)", padding: "clamp(18px, 3vh, 28px)", boxShadow: "0 20px 60px rgba(21,56,42,.10)", borderRadius: 36 }}>
+        <form onSubmit={submit} className="card stack" style={{ width: "100%", maxWidth: 540, "--gap": "clamp(10px, 1.8vh, 16px)", padding: "clamp(18px, 3vh, 28px)", boxShadow: "0 20px 60px rgba(15,59,46,.10)", borderRadius: 36 }}>
           <div className="seg" role="tablist" aria-label="Pilih daftar atau masuk">
             <button type="button" role="tab" aria-selected={daftar} onClick={() => { setMode("daftar"); setError(""); }}>Daftar</button>
             <button type="button" role="tab" aria-selected={!daftar} onClick={() => { setMode("masuk"); setError(""); }}>Masuk</button>

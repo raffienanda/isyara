@@ -81,7 +81,7 @@ function GoalRing({ minutes, goal }) {
   const r = 34, full = 2 * Math.PI * r, part = Math.min(1, minutes / goal) * full;
   return (
     <svg width="84" height="84" viewBox="0 0 84 84" role="img" aria-label={`Target harian ${minutes} dari ${goal} menit`}>
-      <circle cx="42" cy="42" r={r} fill="none" stroke="rgba(255,246,229,.2)" strokeWidth="10" />
+      <circle cx="42" cy="42" r={r} fill="none" stroke="rgba(243,246,244,.2)" strokeWidth="10" />
       <circle ref={arc} cx="42" cy="42" r={r} fill="none" stroke="var(--kuning)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${part} ${full}`} transform="rotate(-90 42 42)" />
       <text x="42" y="49" textAnchor="middle" fill="var(--krem)" fontFamily="var(--display)" fontWeight="800" fontSize="20">{minutes}/{goal}</text>
     </svg>
@@ -115,19 +115,19 @@ export function Beranda() {
             <h1 className="display h-1">Halo, {user.name}!</h1>
             <p className="muted" style={{ fontSize: "1.15rem" }}>Mau latihan apa hari ini?</p>
           </div>
-          <div className="row" style={{ flex: "1 1 320px", padding: "16px 22px", borderRadius: 32, background: "rgba(21,56,42,.55)", flexWrap: "nowrap" }}>
+          <div className="row" style={{ flex: "1 1 320px", padding: "16px 22px", borderRadius: 32, background: "rgba(15,59,46,.55)", flexWrap: "nowrap" }}>
             <GoalRing minutes={stats.todayMinutes} goal={user.goal} />
             <span><strong>Target hari ini</strong><br /><span className="muted">{left ? `${left} menit lagi.` : "Target tercapai. Hebat!"}</span></span>
           </div>
         </div>
 
         {smart.data?.words?.length > 0 && (
-          <a href={"#/main/pintar?kata=" + smart.data.words.join(",")} className="row" style={{ padding: "22px 28px", borderRadius: 32, background: "var(--tua)", color: "var(--krem)", textDecoration: "none", border: "2px solid rgba(112,255,210,.4)" }}>
+          <a href={"#/main/pintar?kata=" + smart.data.words.join(",")} className="row" style={{ padding: "22px 28px", borderRadius: 32, background: "var(--tua)", color: "var(--krem)", textDecoration: "none", border: "2px solid rgba(139,232,193,.4)" }}>
             <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, borderRadius: "50%", background: "var(--neon)", color: "var(--tua)" }}><Spark size={28} /></span>
             <span style={{ flex: "1 1 300px" }}>
-              <span className="small" style={{ fontWeight: 700, color: "var(--neon)" }}>LATIHAN PINTAR · {smart.data.source === "ai" ? "DIPILIH AI" : "DARI HURUF YANG SERING TERLEWAT"}</span><br />
+              <span className="small" style={{ fontWeight: 700, color: "var(--neon)" }}>Latihan pintar, {smart.data.source === "ai" ? "dipilih AI" : "dari huruf yang sering terlewat"}</span><br />
               <strong className="display" style={{ fontSize: "1.4rem" }}>{smart.data.reason}</strong><br />
-              <span className="muted">{smart.data.words.join(" · ")}</span>
+              <span className="muted">{smart.data.words.join(", ")}</span>
             </span>
             <span className="btn btn-neon">Mulai</span>
           </a>
@@ -136,7 +136,7 @@ export function Beranda() {
         <div className="grid" style={{ "--min": "320px" }}>
           <a className="tile-link" href="#/level">
             <img className="art" src={handImg("C")} alt="" />
-            <span className="eyebrow">Level {level} · {doneWords}/{current.words.length} kata</span>
+            <span className="eyebrow">Level {level}, {doneWords} dari {current.words.length} kata</span>
             <strong className="display h-2">Eja jari</strong>
             <span className="muted" style={{ maxWidth: 220 }}>Tirukan huruf A–Z dan susun jadi kata.</span>
           </a>
@@ -200,7 +200,7 @@ export function PilihLevel() {
             return (
               <button key={l.n} onClick={() => setPicked(l.n)} aria-pressed={on} className="row between"
                 style={{ maxWidth: 420, minHeight: 66, padding: "0 28px", borderRadius: 999, fontFamily: "var(--display)", fontWeight: 800, fontSize: "1.6rem",
-                  background: on ? "var(--krem)" : "transparent", color: on ? "var(--tua)" : "var(--krem)", border: "2px solid " + (on ? "var(--krem)" : "rgba(255,246,229,.55)") }}>
+                  background: on ? "var(--krem)" : "transparent", color: on ? "var(--tua)" : "var(--krem)", border: "2px solid " + (on ? "var(--krem)" : "rgba(243,246,244,.55)") }}>
                 <span>Level {l.n}</span>
                 <span style={{ fontFamily: "var(--body)", fontSize: ".9rem", display: "inline-flex", gap: 6, alignItems: "center" }}>
                   {l.n > top ? <><Lock size={16} />Terkunci</> : stats.levelsDone.includes(l.n) ? <><Check size={16} />Selesai</> : "Terbuka"}
@@ -209,8 +209,8 @@ export function PilihLevel() {
             );
           })}
         </section>
-        <section ref={panel} className="stack" aria-live="polite" style={{ flex: "999 1 520px", padding: 40, borderRadius: 40, background: "var(--krem)", color: "var(--teks)", "--gap": "20px" }}>
-          <span className="eyebrow">Level {sel.n} · {sel.name}</span>
+        <section ref={panel} className="stack on-light" aria-live="polite" style={{ flex: "999 1 520px", padding: 40, borderRadius: 28, background: "rgba(243, 246, 244, .96)", border: "1px solid var(--kaca-tepi)", boxShadow: "var(--bayang)", color: "var(--teks)", "--gap": "20px" }}>
+          <span className="eyebrow">Level {sel.n}: {sel.name}</span>
           <p className="display green" style={{ fontSize: "3.2rem", letterSpacing: 10 }}>{sel.letters}</p>
           <div className="row" style={{ "--gap": "12px", flexWrap: "nowrap" }}>
             {Array.from(sel.letters).slice(0, 3).map(ch => (
@@ -280,7 +280,7 @@ export function SiapKamera({ level }) {
           <h1 className="display h-1">Siapkan<br />kameramu</h1>
           <ol className="stack" style={{ margin: 0, padding: 0, listStyle: "none", "--gap": "12px" }}>
             {steps.map(([t, d], i) => (
-              <li key={t} className="row" style={{ flexWrap: "nowrap", padding: "14px 20px", borderRadius: 24, background: "rgba(255,246,229,.10)" }}>
+              <li key={t} className="row" style={{ flexWrap: "nowrap", padding: "14px 20px", borderRadius: 24, background: "rgba(243,246,244,.10)" }}>
                 <span style={{ flex: "none", display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: "50%", background: "var(--kuning)", color: "var(--tua)", fontFamily: "var(--display)", fontWeight: 800 }}>{i + 1}</span>
                 <span><strong>{t}</strong><br /><span className="muted small">{d}</span></span>
               </li>
@@ -318,7 +318,7 @@ export function KameraMasalah() {
           <div className="stack" role="group" aria-label="Jenis kendala" style={{ "--gap": "10px" }}>
             {items.map(([t], j) => (
               <button key={t} aria-pressed={i === j} onClick={() => setI(j)} style={{ textAlign: "left", padding: "16px 22px", borderRadius: 999, fontWeight: 700,
-                background: i === j ? "var(--krem)" : "rgba(21,56,42,.45)", color: i === j ? "var(--tua)" : "var(--krem)", border: "2px solid " + (i === j ? "var(--krem)" : "rgba(255,246,229,.35)") }}>{t}</button>
+                background: i === j ? "var(--krem)" : "rgba(15,59,46,.45)", color: i === j ? "var(--tua)" : "var(--krem)", border: "2px solid " + (i === j ? "var(--krem)" : "rgba(243,246,244,.35)") }}>{t}</button>
             ))}
           </div>
         </aside>
