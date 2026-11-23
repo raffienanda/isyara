@@ -1,33 +1,43 @@
 import { LEVELS, lettersUpTo, unlockedLevel } from "../shared/levels.js";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// The first model is tried first; when it is busy (429/5xx) or gone (404) the next one is used.
+const MODELS = [...new Set([process.env.GEMINI_MODEL || "gemini-3.5-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"])];
+const endpoint = model => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+function configFor(model) {
+  const config = { responseMimeType: "application/json", temperature: 0.6, maxOutputTokens: 2048 };
+  // Short factual summaries do not need long reasoning, and less thinking keeps the reply fast.
+  if (/^gemini-2.5-flash/.test(model)) config.thinkingConfig = { thinkingBudget: 0 };
+  else if (/^gemini-[3-9]/.test(model)) config.thinkingConfig = { thinkingLevel: "low" };
+  return config;
+}
 
 // The student's name never leaves the server. The model only sees "{nama}" and
 // numbers about practice, and the placeholder is filled in after the reply.
 async function askGemini(prompt) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
-  const generationConfig = { responseMimeType: "application/json", temperature: 0.6, maxOutputTokens: 1024 };
-  if (MODEL.includes("2.5-flash")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
-  try {
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig }),
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!res.ok) {
-      console.warn("Gemini", res.status, (await res.text()).slice(0, 300));
-      return null;
+  for (const model of MODELS) {
+    try {
+      const res = await fetch(endpoint(model), {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: configFor(model) }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) {
+        console.warn("Gemini", model, res.status, (await res.text()).slice(0, 200));
+        if (res.status === 429 || res.status === 404 || res.status >= 500) continue;
+        return null;
+      }
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.map(p => p.thought ? "" : p.text || "").join("") || "";
+      return JSON.parse(text.replace(/^```(?:json)?|```$/g, "").trim());
+    } catch (error) {
+      console.warn("Gemini gagal:", model, error.message);
     }
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-    return JSON.parse(text.replace(/^```(?:json)?|```$/g, "").trim());
-  } catch (error) {
-    console.warn("Gemini gagal:", error.message);
-    return null;
   }
+  return null;
 }
 
 const RULES = `Aturan penting:
