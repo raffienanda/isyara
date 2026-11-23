@@ -7,6 +7,7 @@ import { AuthProvider, Loading, useAuth, useRoute } from "./ui";
 import { Intro, Lupa, Masuk, Tentang } from "./pages/Umum";
 import { Beranda, KameraMasalah, Kenalan, PilihLevel, SiapKamera, Tangan } from "./pages/Pelajar";
 import { Main } from "./pages/Main";
+import { Rangkai } from "./pages/Rangkai";
 import { Kamus, Kosakata, Profil } from "./pages/Lainnya";
 import { Kelas, KelasDetail } from "./pages/Pendamping";
 
@@ -49,6 +50,7 @@ function Router() {
       case "tangan": return <Tangan level={arg || "1"} />;
       case "kamera": return <SiapKamera level={arg || "1"} />;
       case "kamera-masalah": return <KameraMasalah />;
+      case "rangkai": return <Rangkai query={query} />;
       case "main": return <Main key={arg + query.toString()} id={arg || "1"} query={query} />;
       default: return <Redirect to="beranda" />;
     }

@@ -84,7 +84,7 @@ a:hover { color: var(--tua); }
 .masuk-grid { display: grid; grid-template-columns: minmax(0, 540px); justify-content: center; align-content: center; align-items: center; gap: clamp(16px, 3vh, 28px) 56px; width: 100%; max-width: 1180px; margin: 0 auto; padding: 4px 24px 32px; }
 .form-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: clamp(10px, 1.8vh, 16px) 14px; align-items: end; }
 @media (min-width: 960px) { .masuk-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 540px); } }
-@media (max-width: 480px) { .btn-lg { white-space: normal; } }
+@media (max-width: 480px) { .btn.btn-lg { white-space: normal; text-align: center; } }
 @media (max-width: 959px) { .masuk-hello { display: none; } .split > .cam-first { order: -1; flex-basis: 100%; min-height: 62vh !important; } }
 @media (min-width: 960px) { .masuk-grid .choice { flex-direction: row; flex-wrap: wrap; column-gap: 12px; text-align: left; padding: 10px 14px; } .masuk-grid .choice img { width: 48px; height: 48px; } .masuk-grid .choice .small { flex-basis: 100%; padding-left: 60px; margin-top: -14px; } }
 @media (min-width: 960px) and (max-height: 820px) { .fit .input { height: 50px; } .fit .choice { padding: 10px 12px; } .fit .btn-lg { min-height: 56px; } }

@@ -52,7 +52,7 @@ if (typeof window !== "undefined") window.addEventListener("online", () => flush
 /* Per-device preferences (not account data). */
 const PREFS = "isyara:prefs";
 export function getPrefs() {
-  try { return { mirror: true, ...JSON.parse(localStorage.getItem(PREFS)) }; } catch { return { mirror: true }; }
+  try { return { mirror: true, voice: true, ...JSON.parse(localStorage.getItem(PREFS)) }; } catch { return { mirror: true, voice: true }; }
 }
 export function setPrefs(prefs) {
   try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* ignore */ }

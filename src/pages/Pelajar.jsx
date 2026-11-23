@@ -152,6 +152,12 @@ export function Beranda() {
             <strong className="display h-2">Kosakata gerak</strong>
             <span className="muted" style={{ maxWidth: 200 }}>Kata sehari-hari dengan animasi tangan 3D.</span>
           </a>
+          <a className="tile-link" href="#/rangkai">
+            <img className="art" src={handImg("W")} alt="" />
+            <span className="eyebrow">Bebas</span>
+            <strong className="display h-2">Rangkai kata</strong>
+            <span className="muted" style={{ maxWidth: 220 }}>Ketik kata apa saja, lihat petunjuknya, lalu eja.</span>
+          </a>
           <a className="tile-link" href="#/kamus">
             <span className="eyebrow">{stats.mastered.length}/26 dikuasai</span>
             <strong className="display h-2">Kamus A–Z</strong>
@@ -166,7 +172,7 @@ export function Beranda() {
             {groups.length ? groups.map(g => <p key={g.id}><strong>{g.name}</strong> · pendamping {g.owner}</p>)
               : <p>Belum bergabung ke kelas. <a href="#/profil">Masukkan kode kelas</a> supaya pendamping bisa ikut menyemangati.</p>}
           </section>
-          <section className="card stack" style={{ color: "var(--teks)", "--gap": "10px" }}>
+          <section className="card stack" style={{ "--gap": "10px" }}>
             <h2 className="display h-3">Catatan dari pendamping</h2>
             {notes.length ? <blockquote style={{ margin: 0 }}><p style={{ fontSize: "1.1rem" }}>{notes[0].text}</p><span className="small muted">{notes[0].author}</span></blockquote>
               : <p className="muted">Belum ada catatan.</p>}
@@ -219,7 +225,7 @@ export function PilihLevel() {
               </span>
             ))}
           </div>
-          <p className="muted">{sel.desc} Kata: {sel.words.join(", ")}.</p>
+          <p className="muted">{sel.desc} {sel.words.length} kata latihan, 8 kata per putaran. Contoh: {sel.words.slice(0, 6).join(", ")}.</p>
           {open ? <>
             <div className="stack" style={{ "--gap": "6px" }}>
               <span className="small" style={{ fontWeight: 700 }}>{done}/{sel.words.length} kata pernah selesai</span>

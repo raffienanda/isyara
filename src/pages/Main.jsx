@@ -1,10 +1,12 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { burst, countUp, gsap, rain, reduced, useSwap } from "../anim";
 import { CameraLab } from "../lib/media";
 import { describeHands, fingerFeedback } from "../lib/shape";
-import { recordProgress } from "../api";
-import { LEVELS, TWO_HANDED, WORD_POINTS } from "../../shared/levels.js";
-import { ArrowLeft, ArrowRight, Check, Spark, go, handImg, tipFor, useAuth } from "../ui";
+import { api, getPrefs, recordProgress, setPrefs } from "../api";
+import { canSpeak, speakLetter, speakWord, stopSpeaking } from "../lib/voice";
+import { Volume2, VolumeX } from "lucide-react";
+import { LEVELS, SESSION_WORDS, TWO_HANDED, WORD_POINTS } from "../../shared/levels.js";
+import { ArrowLeft, ArrowRight, Check, Loading, Spark, go, handImg, tipFor, useAuth } from "../ui";
 
 const HOLD_FRAMES = 4;
 const HOLD_MS = 500;
@@ -14,21 +16,51 @@ function wordsFor(id, query, user) {
     const name = (user.name || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 10);
     return name.length ? [name] : ["ISYARA"];
   }
-  if (id === "pintar") {
-    const list = (query.get("kata") || "").toUpperCase().split(",").map(w => w.replace(/[^A-Z]/g, "")).filter(Boolean);
-    return list.length ? list.slice(0, 5) : LEVELS[0].words.slice(0, 3);
+  if (id === "pintar" || id === "rangkai") {
+    const list = (query.get("kata") || "").toUpperCase().split(",").map(w => w.replace(/[^A-Z]/g, "").slice(0, 12)).filter(Boolean);
+    return list.length ? list.slice(0, 6) : LEVELS[0].words.slice(0, 3);
   }
-  return (LEVELS[Number(id) - 1] || LEVELS[0]).words;
+  return null;
 }
 
-const clock = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+const shuffle = list => list.map(w => [Math.random(), w]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+// A round takes words the learner has not finished yet first, then fills up with ones to review.
+// Shorter words come first so each round starts easy.
+function pickSession(pool, done) {
+  const fresh = shuffle(pool.filter(w => !done.has(w)));
+  const review = shuffle(pool.filter(w => done.has(w)));
+  return [...fresh, ...review].slice(0, SESSION_WORDS).sort((a, b) => a.length - b.length);
+}
 
 export function Main({ id, query }) {
   const { user } = useAuth();
   const level = LEVELS.find(l => String(l.n) === id);
-  const words = useMemo(() => wordsFor(id, query, user), [id, query, user]);
-  const title = level ? `Level ${level.n}, ${level.name}` : id === "nama" ? "Eja namaku" : "Latihan pintar";
-  const exit = level ? "level" : "beranda";
+  const [words, setWords] = useState(() => level ? null : wordsFor(id, query, user));
+  useEffect(() => {
+    if (!level) return;
+    let live = true;
+    api("/progres").then(d => new Set(d.stats.words)).catch(() => new Set())
+      .then(done => { if (live) setWords(pickSession(level.words, done)); });
+    return () => { live = false; };
+  }, [level]);
+  if (!words) return <div className="screen bg-panel"><Loading /></div>;
+  return <Game id={id} level={level} words={words} />;
+}
+
+const clock = s => String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+
+function Game({ id, level, words }) {
+  const { user } = useAuth();
+  const title = level ? `Level ${level.n}, ${level.name}` : id === "nama" ? "Eja namaku" : id === "rangkai" ? "Rangkai kata" : "Latihan pintar";
+  const exit = level ? "level" : id === "rangkai" ? "rangkai" : "beranda";
+  const [voice, setVoice] = useState(() => canSpeak() && getPrefs().voice !== false);
+  function toggleVoice() {
+    const next = !voice;
+    setVoice(next);
+    setPrefs({ ...getPrefs(), voice: next });
+    if (!next) stopSpeaking();
+  }
+  useEffect(() => stopSpeaking, []);
 
   const [wi, setWi] = useState(0);
   const [li, setLi] = useState(0);
@@ -111,11 +143,13 @@ export function Main({ id, query }) {
     hold$.current = { since: null, frames: 0, release: word[li + 1] === letter, misses: 0, gap: false, lastMatch: 0 };
     setHold(0);
     setFingers(null);
+    if (status === "kuasai") speakLetter(letter);
     if (li + 1 < word.length) {
       setLi(li + 1);
       setHint(status === "kuasai" ? `${letter} cocok! Lanjut ke ${word[li + 1]}.` : `Huruf ${letter} dilewati.`);
       return;
     }
+    speakWord(word);
     const gained = word.length * WORD_POINTS;
     setPoints(p => p + gained);
     recordProgress({ type: "kata", word });
@@ -190,6 +224,7 @@ export function Main({ id, query }) {
         <div className="row" style={{ justifyContent: "center" }}>
           <button className="btn btn-outline-light btn-lg" onClick={restart}>Main lagi</button>
           {nextLevel ? <a className="btn btn-kuning btn-lg" href={"#/tangan/" + nextLevel.n}>Level {nextLevel.n} <ArrowRight /></a>
+            : id === "rangkai" ? <a className="btn btn-kuning btn-lg" href="#/rangkai">Eja kata lain <ArrowRight /></a>
             : <a className="btn btn-kuning btn-lg" href="#/beranda">Ke beranda <ArrowRight /></a>}
         </div>
       </div>
@@ -230,7 +265,12 @@ export function Main({ id, query }) {
             </div>
           )}
           <div className="overlay-top on-dark">
-            <span className="chip chip-glass">{clock(elapsed)}</span>
+            <span className="row" style={{ "--gap": "8px" }}>
+              <span className="chip chip-glass">{clock(elapsed)}</span>
+              {canSpeak() && <button className="chip chip-glass" aria-pressed={voice} onClick={toggleVoice} title="Sebut huruf dan kata dengan suara" style={{ cursor: "pointer" }}>
+                {voice ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}{voice ? "Suara nyala" : "Suara mati"}
+              </button>}
+            </span>
             <span className="display" style={{ fontSize: "1.6rem", color: "var(--kuning)" }}>{points} poin</span>
             <span className="chip chip-glass small">Diproses di perangkat</span>
           </div>

@@ -13,7 +13,9 @@ Ada dua peran:
 |---|---|
 | Pengenal huruf A–Z | MediaPipe membaca 21 titik tangan di browser. Pencocokan dengan contoh dataset BISINDO ditambah model ExtraTrees. Gambar kamera tidak pernah dikirim. |
 | Pelatih per jari | Pose dibandingkan dengan contoh terdekat untuk huruf target. Jari yang jauh dari contoh diberi tanda "Betulkan". Ini perkiraan, bukan penilaian pasti. |
-| Level bertahap | Level 1: huruf satu tangan (C E I L O R U V). Level 2–4: huruf dua tangan dan huruf bergerak (J, Z). Level berikutnya terbuka setelah level sebelumnya selesai. |
+| Level bertahap | Level 1: huruf satu tangan (C E I L O R U V). Level 2–4: huruf dua tangan dan huruf bergerak (J, Z). Tiap level punya 18–27 kata yang hanya memakai huruf yang sudah terbuka (95 kata total). Satu putaran berisi 8 kata, kata yang belum pernah selesai didahulukan. Level berikutnya terbuka setelah satu putaran selesai. |
+| Rangkai kata | Ketik kata atau nama apa saja (sampai 6 kata). Halaman ini menunjukkan bentuk tangan setiap huruf, menandai huruf dua tangan dan huruf bergerak, lalu membuka latihan kamera untuk kata itu. |
+| Suara | Huruf yang benar disebut dengan nama huruf Indonesia (ce, u, ce, i), lalu katanya disebut utuh ("cuci"). Memakai suara bawaan browser, bisa dimatikan di layar main atau Profil. Ditujukan untuk pendamping yang mendengar. |
 | Latihan pintar | Gemini memilih 3 kata dari daftar kata yang ada, berdasarkan huruf yang sering dilewati. Tanpa kunci API, pemilihan memakai aturan biasa. |
 | Ringkasan AI | Pendamping menekan "Buat ringkasan AI". Gemini menerima angka progres saja (tanpa nama, tanpa gambar) dan membalas ringkasan + 3 saran kegiatan. Tanpa kunci API, ringkasan dibuat dari templat. |
 | Latihan luring | Service worker menyimpan aplikasi dan model. Progres disimpan di antrean perangkat dan dikirim saat tersambung lagi. |

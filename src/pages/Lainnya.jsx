@@ -223,7 +223,8 @@ export function Profil({ query }) {
   const stats = progress.data?.stats;
   const Msg = ({ k }) => msg[k] ? <p className={"alert " + (msg[k].ok ? "alert-ok" : "alert-error")} role="status">{msg[k].text}</p> : null;
   const toggles = [["large", "Teks besar", "Perbesar semua tulisan"], ["contrast", "Kontras tinggi", "Warna lebih tegas dan mudah dibedakan"],
-    ["reduceMotion", "Kurangi animasi", "Hentikan gerakan dekorasi"], ["mirror", "Cerminkan kamera", "Kamera tampil seperti cermin"]];
+    ["reduceMotion", "Kurangi animasi", "Hentikan gerakan dekorasi"], ["mirror", "Cerminkan kamera", "Kamera tampil seperti cermin"],
+    ["voice", "Suara huruf dan kata", "Sebut huruf yang benar dan kata yang selesai, untuk pendamping yang mendengar"]];
   return (
     <div className="bg-soft" style={{ minHeight: "100vh", paddingBottom: 56 }}>
       <header className="bg-banner on-dark banner">
