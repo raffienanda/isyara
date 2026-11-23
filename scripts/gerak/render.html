@@ -1,0 +1,232 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#FFF6E5}</style></head>
+<body><canvas id="c" width="720" height="720"></canvas>
+<script>
+// Renders one WL-BISINDO landmark clip as a figure with head, body, arms and two colour-coded hands.
+const ASPECT = 16 / 9;            // source videos are 16:9; x is stretched to keep the hand shape true
+const FPS = 30, SRC_FPS = 18, HOLD_START = 0.8, HOLD_END = 0.9;
+const C = {
+  bg: "#FFF6E5", glow: "#E4F2E6", body: "#E8D6BC", bodyLine: "#C9B18F", skin: "#F2D3B3", skinLine: "#C99B72",
+  hair: "#3B2B22", right: "#2E9E6B", rightLine: "#15382A", left: "#F28C38", leftLine: "#8A3410",
+  text: "#15382A", chip: "#15382A",
+};
+const canvas = document.getElementById("c"), g = canvas.getContext("2d");
+const has = h => h && h.some(p => p[0] || p[1]);
+const P = p => [p[0] * ASPECT, p[1]];
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+const lerp = (a, b, t) => a + (b - a) * t;
+const median = a => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+
+function prepare(sample) {
+  const n = sample.length;
+  // Nose: fill gaps, keep it steady (the head barely moves in these clips).
+  let nose = sample.map(f => (f[0][0] || f[0][1]) ? P(f[0]) : null);
+  const known = nose.filter(Boolean);
+  const nose0 = [median(known.map(p => p[0])), median(known.map(p => p[1]))];
+  nose = nose.map(p => p ? [lerp(nose0[0], p[0], .3), lerp(nose0[1], p[1], .3)] : nose0);
+  // Track the two hands across frames by nearest wrist, so a hand keeps its colour and arm.
+  const tracks = [Array(n).fill(null), Array(n).fill(null)], last = [null, null];
+  for (let i = 0; i < n; i++) {
+    const hands = sample[i][1].filter(has).map(h => h.map(P));
+    if (!hands.length) continue;
+    const cost = (t, h) => last[t] ? dist(last[t][0], h[0]) : (h[0][0] < nose[i][0] ? (t === 0 ? 0 : 1) : (t === 1 ? 0 : 1)) * 0.5;
+    if (hands.length === 1) {
+      const t = cost(0, hands[0]) <= cost(1, hands[0]) ? 0 : 1;
+      tracks[t][i] = hands[0]; last[t] = hands[0];
+    } else {
+      const keep = cost(0, hands[0]) + cost(1, hands[1]) <= cost(0, hands[1]) + cost(1, hands[0]);
+      const [a, b] = keep ? hands : [hands[1], hands[0]];
+      tracks[0][i] = a; tracks[1][i] = b; last[0] = a; last[1] = b;
+    }
+  }
+  const out = [];
+  for (const tr of tracks) {
+    const idx = tr.map((h, i) => h ? i : -1).filter(i => i >= 0);
+    if (idx.length < Math.max(5, n * 0.3)) continue;
+    const filled = tr.map((h, i) => {
+      if (h) return h;
+      const before = idx.filter(j => j < i).pop(), after = idx.find(j => j > i);
+      if (before == null) return tr[after];
+      if (after == null) return tr[before];
+      const t = (i - before) / (after - before);
+      return tr[before].map((p, k) => [lerp(p[0], tr[after][k][0], t), lerp(p[1], tr[after][k][1], t)]);
+    });
+    let s = filled;
+    for (let pass = 0; pass < 2; pass++) s = s.map((h, i) => h.map((p, k) => {
+      const a = s[Math.max(0, i - 1)][k], c = s[Math.min(n - 1, i + 1)][k];
+      return [(a[0] + 2 * p[0] + c[0]) / 4, (a[1] + 2 * p[1] + c[1]) / 4];
+    }));
+    out.push(s);
+  }
+  // Drop a hand that only rests at the side, then trim the lifting and lowering of the hands,
+  // so the clip starts at the first real handshape and ends at the last one.
+  const S0 = median(out.flatMap(tr => tr.map(h => dist(h[0], h[9]))));
+  const rel = h => (h[9][1] - nose0[1]) / S0;
+  const highest = Math.min(...out.map(tr => Math.min(...tr.map(rel))));
+  const ACTIVE = Math.min(4.6, highest + 2.4);
+  for (let t = out.length - 1; t >= 0; t--) if (Math.min(...out[t].map(rel)) > ACTIVE + 0.5 && out.length > 1) out.splice(t, 1);
+  let active = [...Array(n).keys()].filter(i => out.some(tr => rel(tr[i]) < ACTIVE));
+  if (active.length < 6) active = [...Array(n).keys()].filter(i => out.some(tr => rel(tr[i]) < ACTIVE + 1.5));
+  let from = 0, to = n - 1;
+  if (active.length >= 4) { from = active[0]; to = active[active.length - 1]; }
+  const usable = out.length > 0 && highest < 6 && active.length >= 6;
+  nose = nose.slice(from, to + 1);
+  for (let t = 0; t < out.length; t++) out[t] = out[t].slice(from, to + 1);
+  const m = to - from + 1;
+  // The signer's right hand appears on the viewer's left. Sort so tracks[0] is that hand.
+  out.sort((a, b) => median(a.map(h => h[0][0])) - median(b.map(h => h[0][0])));
+  const S = median(out.flatMap(tr => tr.map(h => dist(h[0], h[9]))));
+  const sides = out.length === 1 ? [-1] : [-1, 1];
+  const travel = tr => tr.reduce((sum, h, i) => i ? sum + dist(h[9], tr[i - 1][9]) : 0, 0);
+  const main = out.length === 2 && travel(out[1]) > travel(out[0]) ? 1 : 0;
+  // Square frame around head, shoulders and every hand position.
+  const xs = [nose0[0] - 3.4 * S, nose0[0] + 3.4 * S], ys = [nose0[1] - 1.8 * S, nose0[1] + 4.6 * S];
+  for (const tr of out) for (const h of tr) for (const p of h) { xs.push(p[0]); ys.push(p[1]); }
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const side = Math.max(x1 - x0, y1 - y0) * 1.12;
+  const view = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 + side * 0.02, side };
+  return { n: m, nose, nose0, tracks: out, sides, main, S, view, from, to, src: n, usable, mins: out.map(tr => Math.min(...tr.map(h => (h[9][1] - nose0[1]) / S0)).toFixed(1)) };
+}
+
+function frameAt(data, f) {
+  const i = Math.floor(f), t = f - i, j = Math.min(data.n - 1, i + 1);
+  return {
+    nose: [lerp(data.nose[i][0], data.nose[j][0], t), lerp(data.nose[i][1], data.nose[j][1], t)],
+    hands: data.tracks.map(tr => tr[i].map((p, k) => [lerp(p[0], tr[j][k][0], t), lerp(p[1], tr[j][k][1], t)])),
+  };
+}
+
+function setup(data) {
+  const k = canvas.width / data.view.side;
+  g.setTransform(k, 0, 0, k, canvas.width / 2 - data.view.cx * k, canvas.height / 2 - data.view.cy * k);
+  return k;
+}
+
+function elbow(shoulder, wrist, S, side) {
+  const toW = [wrist[0] - shoulder[0], wrist[1] - shoulder[1]], d = Math.hypot(...toW) || 1;
+  let dir = [side * 0.42 + 0.35 * toW[0] / d, 1 + 0.35 * toW[1] / d];
+  const len = Math.hypot(...dir); dir = [dir[0] / len, dir[1] / len];
+  let e = [shoulder[0] + dir[0] * 2.5 * S, shoulder[1] + dir[1] * 2.5 * S];
+  // A hand hanging low: the elbow sits halfway along a mostly straight arm.
+  if (wrist[1] > e[1] + 0.4 * S) e = [lerp(shoulder[0], wrist[0], .5) + side * 0.35 * S, lerp(shoulder[1], wrist[1], .5)];
+  return e;
+}
+
+function line(points, width, color) {
+  g.beginPath(); g.moveTo(...points[0]); for (const p of points.slice(1)) g.lineTo(...p);
+  g.lineWidth = width; g.strokeStyle = color; g.lineCap = "round"; g.lineJoin = "round"; g.stroke();
+}
+
+const FINGERS = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]];
+function hand(h, S, fill, outline) {
+  const palm = [0, 1, 5, 9, 13, 17].map(i => h[i]);
+  const w = S * 0.22;
+  for (const [width, color] of [[w + S * 0.1, outline], [w, fill]]) {
+    g.beginPath(); g.moveTo(...palm[0]); for (const p of palm.slice(1)) g.lineTo(...p); g.closePath();
+    g.lineWidth = width; g.strokeStyle = color; g.lineJoin = "round"; g.stroke();
+    g.fillStyle = color; g.fill();
+    for (const f of FINGERS) line((f[0] === 1 ? [0, ...f] : f).map(i => h[i]), width, color);
+  }
+  // A light sheen on the palm gives the flat shape a little volume.
+  const c = [(h[0][0] + h[9][0]) / 2, (h[0][1] + h[9][1]) / 2];
+  g.beginPath(); g.arc(c[0], c[1], S * 0.22, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,.18)"; g.fill();
+}
+
+function arrowHead(from, to, size, color) {
+  const a = Math.atan2(to[1] - from[1], to[0] - from[0]);
+  g.beginPath(); g.moveTo(to[0] + Math.cos(a) * size, to[1] + Math.sin(a) * size);
+  g.lineTo(to[0] + Math.cos(a + 2.5) * size, to[1] + Math.sin(a + 2.5) * size);
+  g.lineTo(to[0] + Math.cos(a - 2.5) * size, to[1] + Math.sin(a - 2.5) * size);
+  g.closePath(); g.fillStyle = color; g.fill();
+}
+
+function draw(data, f, phase, progress, opts = {}) {
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = C.bg; g.fillRect(0, 0, canvas.width, canvas.height);
+  const k = setup(data), S = data.S, { nose, hands } = frameAt(data, f), n0 = data.nose0;
+  g.beginPath(); g.arc(n0[0], n0[1] + 2.2 * S, 4.6 * S, 0, Math.PI * 2); g.fillStyle = C.glow; g.fill();
+  // Body
+  const shY = n0[1] + 2.15 * S, shL = [n0[0] - 2.3 * S, shY], shR = [n0[0] + 2.3 * S, shY];
+  g.beginPath();
+  g.moveTo(n0[0] - 0.55 * S, n0[1] + 1.2 * S); g.lineTo(n0[0] + 0.55 * S, n0[1] + 1.2 * S);
+  g.quadraticCurveTo(n0[0] + 0.6 * S, shY - 0.3 * S, shR[0], shY);
+  g.quadraticCurveTo(shR[0] + 0.9 * S, shY + 0.2 * S, shR[0] + 0.8 * S, n0[1] + 12 * S);
+  g.lineTo(shL[0] - 0.8 * S, n0[1] + 12 * S);
+  g.quadraticCurveTo(shL[0] - 0.9 * S, shY + 0.2 * S, shL[0], shY);
+  g.quadraticCurveTo(n0[0] - 0.6 * S, shY - 0.3 * S, n0[0] - 0.55 * S, n0[1] + 1.2 * S);
+  g.fillStyle = C.body; g.fill(); g.lineWidth = S * 0.08; g.strokeStyle = C.bodyLine; g.stroke();
+  // Head with a calm face, so the hand position against chin, mouth and forehead is readable.
+  const hc = [nose[0], nose[1] - 0.15 * S];
+  g.beginPath(); g.ellipse(hc[0], hc[1], 0.82 * S, 1.06 * S, 0, 0, Math.PI * 2); g.fillStyle = C.skin; g.fill();
+  g.lineWidth = S * 0.07; g.strokeStyle = C.skinLine; g.stroke();
+  g.beginPath(); g.ellipse(hc[0], hc[1] - 0.45 * S, 0.86 * S, 0.68 * S, 0, Math.PI * 1.02, Math.PI * 1.98); g.fillStyle = C.hair; g.fill();
+  for (const dx of [-0.31, 0.31]) { g.beginPath(); g.arc(hc[0] + dx * S, hc[1] - 0.05 * S, 0.09 * S, 0, Math.PI * 2); g.fillStyle = C.text; g.fill(); }
+  g.beginPath(); g.arc(hc[0], hc[1] + 0.38 * S, 0.26 * S, 0.15 * Math.PI, 0.85 * Math.PI); g.lineWidth = S * 0.07; g.strokeStyle = C.text; g.stroke();
+  // Motion trail of each hand's centre: faint full path, stronger part already travelled, arrow at the end.
+  if (!opts.still) data.tracks.forEach((tr, t) => {
+    const col = t === data.main ? C.right : C.left;
+    const pts = tr.map(h => [(h[0][0] + h[9][0]) / 2, (h[0][1] + h[9][1]) / 2]);
+    const span = pts.reduce((m, p) => Math.max(m, dist(p, pts[0])), 0);
+    if (span < S * 0.6) return;
+    g.setLineDash([S * 0.18, S * 0.22]); line(pts, S * 0.09, col + "55"); g.setLineDash([]);
+    const upto = Math.max(1, Math.floor(f) + 1);
+    if (upto > 1) line(pts.slice(0, upto + 1), S * 0.13, col + "AA");
+    arrowHead(pts[pts.length - 3], pts[pts.length - 1], S * 0.42, col + "99");
+  });
+  // Arms then hands. Hand on the viewer's left belongs to the signer's right shoulder.
+  hands.forEach((h, t) => {
+    const side = data.sides[t], sh = side < 0 ? shL : shR;
+    const el = elbow(sh, h[0], S, side);
+    line([sh, el, h[0]], S * 0.78, C.bodyLine);
+    line([sh, el, h[0]], S * 0.64, C.body);
+    line([[lerp(el[0], h[0][0], .82), lerp(el[1], h[0][1], .82)], h[0]], S * 0.5, C.skin);
+  });
+  hands.forEach((h, t) => hand(h, S, t === data.main ? C.right : C.left, t === data.main ? C.rightLine : C.leftLine));
+  // Labels in screen space.
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (opts.still) return;
+  const W = canvas.width;
+  g.font = "700 26px 'Segoe UI', system-ui, sans-serif"; g.textBaseline = "middle";
+  const label = { awal: "1  Awal", gerak: "2  Gerak", akhir: "3  Akhir" }[phase];
+  const tw = g.measureText(label).width + 40;
+  g.fillStyle = phase === "gerak" ? C.right : C.chip; roundRect(24, 24, tw, 48, 24); g.fill();
+  g.fillStyle = "#FFF6E5"; g.fillText(label, 44, 49);
+  const legend = data.tracks.length === 2 ? [["Tangan utama", C.right], ["Tangan bantu", C.left]] : [["Tangan utama", C.right]];
+  g.font = "600 21px 'Segoe UI', system-ui, sans-serif";
+  let x = W - 24;
+  for (const [txt, col] of legend.reverse()) {
+    const w = g.measureText(txt).width; x -= w;
+    g.fillStyle = C.text; g.fillText(txt, x, 48);
+    g.beginPath(); g.arc(x - 16, 48, 9, 0, Math.PI * 2); g.fillStyle = col; g.fill(); x -= 46;
+  }
+  g.fillStyle = "rgba(21,56,42,.12)"; roundRect(24, W - 34, W - 48, 10, 5); g.fill();
+  g.fillStyle = C.right; roundRect(24, W - 34, Math.max(10, (W - 48) * progress), 10, 5); g.fill();
+}
+function roundRect(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+
+// Timeline: hold the start pose, play the motion slower than real time, hold the end pose.
+window.plan = sample => {
+  const data = prepare(sample);
+  const motion = (data.n - 1) / SRC_FPS;
+  const total = HOLD_START + motion + HOLD_END;
+  const frames = Math.round(total * FPS);
+  window.current = { data, frames, motion, total };
+  return { usable: data.usable, frames, hands: data.tracks.length, seconds: total, from: data.from, to: data.to, src: data.src, mins: data.mins };
+};
+window.renderFrame = i => {
+  const { data, motion, total } = window.current, t = i / FPS;
+  let f, phase;
+  if (t < HOLD_START) { f = 0; phase = "awal"; }
+  else if (t < HOLD_START + motion) { const u = (t - HOLD_START) / motion; f = (0.5 - Math.cos(Math.PI * u) / 2) * (data.n - 1); phase = "gerak"; }
+  else { f = data.n - 1; phase = "akhir"; }
+  draw(data, f, phase, t / total);
+  return canvas.toDataURL("image/png");
+};
+window.renderStill = (which, size = 360) => {
+  const { data } = window.current;
+  draw(data, which === "awal" ? 0 : data.n - 1, which, 0, { still: true });
+  const out = document.createElement("canvas"); out.width = out.height = size;
+  out.getContext("2d").drawImage(canvas, 0, 0, size, size);
+  return out.toDataURL("image/png");
+};
+</script></body></html>

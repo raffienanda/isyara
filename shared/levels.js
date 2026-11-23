@@ -28,7 +28,7 @@ export const GERAK = [
   { word: "hari", group: "WAKTU", meaning: "Satuan waktu dari pagi sampai malam.", example: "Hari ini cerah." },
   { word: "terima kasih", group: "SOPAN SANTUN", meaning: "Ungkapan rasa senang karena dibantu.", example: "Terima kasih, Bu Guru." },
   { word: "maaf", group: "SOPAN SANTUN", meaning: "Ungkapan menyesal atau minta izin.", example: "Maaf, saya terlambat." },
-  { word: "apa", group: "KATA TANYA", meaning: "Menanyakan benda atau hal.", example: "Ini apa?" },
+  { word: "apa", takes: 1, group: "KATA TANYA", meaning: "Menanyakan benda atau hal.", example: "Ini apa?" },
   { word: "siapa", group: "KATA TANYA", meaning: "Menanyakan orang.", example: "Siapa namamu?" },
 ];
 

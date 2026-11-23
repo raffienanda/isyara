@@ -13,7 +13,7 @@ Ilustrasi tangan 3D (alfabet-3d/)
 Dirender ulang untuk ISYARA dari titik tangan dataset Samuel Ady Sanjaya (CC BY 4.0). D-kontak-v2 dan J-kelingking digambar ulang berdasarkan pose pada D5.jpg dan J4.jpg dari dataset yang sama.
 
 Kosakata gerak (gerak/, kosakata-gerak.json, model-kosakata.json)
-sigawari, WL-BISINDO-10class, https://huggingface.co/datasets/sigawari/wl-bisindo-10class — CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/). Animasi 3D dirender dari landmark tangan dataset. Model ExtraTrees dilatih dari 240 contoh tiga penutur. Untuk penggunaan nonkomersial.
+sigawari, WL-BISINDO-10class, https://huggingface.co/datasets/sigawari/wl-bisindo-10class — CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/). Animasi figur (kepala, badan, lengan, tangan utama hijau dan tangan bantu oranye, jejak arah gerak, jeda pose awal dan akhir) dirender ulang untuk ISYARA dari landmark tangan dataset dengan scripts/gerak/render.mjs. Model ExtraTrees dilatih dari 240 contoh tiga penutur. Untuk penggunaan nonkomersial.
 
 Pelacakan tangan dan wajah
 Google MediaPipe Tasks Vision, model hand_landmarker dan face_landmarker. https://github.com/google-ai-edge/mediapipe (Apache 2.0)

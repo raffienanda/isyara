@@ -46,6 +46,7 @@ export function useLoad(path, deps = []) {
 const SPECIAL = { D: "D-kontak-v2", J: "J-kelingking" };
 export const handImg = letter => `./alfabet-3d/${SPECIAL[letter] ?? letter + "-render"}.webp`;
 export const gerakVideo = (word, n = 1) => `./gerak/${word.replaceAll(" ", "_")}-${n}.mp4`;
+export const gerakPose = (word, n, which) => `./gerak/${word.replaceAll(" ", "_")}-${n}-${which}.webp`;
 
 export const TIPS = {
   A: "Satukan ujung telunjuk dan ibu jari kedua tangan di depan dada.",

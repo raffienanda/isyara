@@ -3,14 +3,14 @@ import { CameraLab, warmUpCamera } from "../lib/media";
 import { useSwap } from "../anim";
 import { api, getPrefs, recordProgress, setPrefs } from "../api";
 import { ALPHABET, GERAK, TWO_HANDED } from "../../shared/levels.js";
-import { ArrowLeft, ArrowRight, Back, LetterMap, Loading, gerakVideo, handImg, tipFor, useAuth, useLoad } from "../ui";
+import { ArrowLeft, ArrowRight, Back, LetterMap, Loading, gerakPose, gerakVideo, handImg, tipFor, useAuth, useLoad } from "../ui";
 
-function Banner({ back, backLabel, title, accent, children }) {
+function Banner({ back, backLabel, title, accent, children, compact }) {
   return (
-    <header className="bg-banner on-dark banner">
-      <div className="container">
+    <header className="bg-banner on-dark banner" style={compact ? { paddingBottom: "clamp(20px, 4vh, 40px)" } : undefined}>
+      <div className="container" style={compact ? { gap: 8, paddingTop: 12 } : undefined}>
         <Back to={back}>{backLabel}</Back>
-        <h1 className="display h-1">{title} {accent && <span className="accent">{accent}</span>}</h1>
+        <h1 className={"display " + (compact ? "h-2" : "h-1")} style={compact ? { fontSize: "clamp(2rem, 6vh, 3.4rem)" } : undefined}>{title} {accent && <span className="accent">{accent}</span>}</h1>
         {children}
       </div>
     </header>
@@ -77,6 +77,7 @@ export function Kosakata() {
   const video = useRef(null);
   const index = GERAK.findIndex(g => g.word === picked);
   const item = GERAK[index];
+  const takes = item.takes || 3;
   function pick(word) { setPicked(word); setTake(1); setNotice(""); }
   function matched(word) {
     setNotice(`Gerakan "${word}" terbaca mirip contoh.` + (user?.role === "pelajar" ? " Tersimpan di progresmu." : ""));
@@ -87,13 +88,13 @@ export function Kosakata() {
   const example = (size) => (
     <video ref={video} key={picked + take} src={gerakVideo(picked, take)} muted loop autoPlay playsInline aria-label={"Animasi tangan 3D untuk kata " + picked}
       onLoadedMetadata={e => { e.currentTarget.playbackRate = slow ? 0.5 : 1; }}
-      style={{ width: size, aspectRatio: "1", objectFit: "cover", borderRadius: 28, background: "var(--mint)", transform: mirror ? "scaleX(-1)" : undefined, flex: "none" }} />
+      style={{ width: size, aspectRatio: "1", objectFit: "cover", borderRadius: 28, background: "var(--krem)", transform: mirror ? "scaleX(-1)" : undefined, flex: "none" }} />
   );
   const videoTools = (
     <div className="row" style={{ "--gap": "8px" }}>
       <button className="btn btn-outline btn-sm" aria-pressed={slow} onClick={() => { setSlow(!slow); if (video.current) video.current.playbackRate = slow ? 1 : 0.5; }}>Perlambat 0,5×</button>
       <button className="btn btn-outline btn-sm" aria-pressed={mirror} onClick={() => setMirror(!mirror)}>Cerminkan contoh</button>
-      {[1, 2, 3].map(n => <button key={n} className="btn btn-outline btn-sm" aria-pressed={take === n} onClick={() => setTake(n)}>Penutur {n}</button>)}
+      {takes > 1 && Array.from({ length: takes }, (_, i) => i + 1).map(n => <button key={n} className="btn btn-outline btn-sm" aria-pressed={take === n} onClick={() => setTake(n)}>Contoh {n}</button>)}
     </div>
   );
 
@@ -138,8 +139,8 @@ export function Kosakata() {
 
   return (
     <div className="bg-soft" style={{ minHeight: "100vh", paddingBottom: 12 }}>
-      <Banner back={user?.role === "pendamping" ? "kelas" : "beranda"} backLabel="Kembali" title="Kosakata" accent="gerak">
-        <p className="muted" style={{ maxWidth: 620 }}>Sepuluh kata BISINDO sehari-hari dengan animasi tangan 3D. Tonton, perlambat, lalu tirukan di depan kamera.</p>
+      <Banner back={user?.role === "pendamping" ? "kelas" : "beranda"} backLabel="Kembali" title="Kosakata" accent="gerak" compact>
+        <p className="muted" style={{ maxWidth: 620 }}>Sepuluh kata BISINDO sehari-hari dengan animasi gerak. Lihat pose awal dan akhir, perlambat, lalu tirukan di depan kamera.</p>
       </Banner>
       <main id="isi" className="container row" style={{ paddingTop: "clamp(12px, 2.4vh, 28px)", alignItems: "flex-start", "--gap": "28px" }}>
         <div role="group" aria-label="Daftar kata" className="grid" style={{ flex: "1 1 340px", "--min": "150px", "--gap": "10px" }}>
@@ -150,12 +151,12 @@ export function Kosakata() {
             </button>
           ))}
         </div>
-        <section className="card row" aria-live="polite" style={{ flex: "999 1 620px", borderRadius: 40, alignItems: "flex-start", "--gap": "26px" }}>
-          <div className="stack" style={{ flex: "1 1 300px", "--gap": "12px", alignItems: "center" }}>
-            {example("min(100%, 40vh)")}
+        <section className="card row" aria-live="polite" style={{ flex: "999 1 620px", minWidth: 0, borderRadius: 40, alignItems: "flex-start", "--gap": "26px" }}>
+          <div className="stack" style={{ flex: "1 1 300px", minWidth: 0, "--gap": "12px", alignItems: "center" }}>
+            {example("min(100%, 38vh)")}
             {videoTools}
           </div>
-          <div className="stack" style={{ flex: "1 1 260px", "--gap": "14px" }}>
+          <div className="stack" style={{ flex: "1 1 260px", minWidth: 0, "--gap": "14px" }}>
             <span className="eyebrow">{item.group}</span>
             <h2 className="display green" style={{ fontSize: "clamp(2.2rem, 5.4vh, 3.2rem)", textTransform: "uppercase" }}>{item.word}</h2>
             <p className="muted">{item.meaning}</p>
@@ -163,8 +164,21 @@ export function Kosakata() {
               <span className="small muted" style={{ fontWeight: 700 }}>CONTOH KALIMAT</span>
               <p className="display" style={{ fontSize: "1.3rem", marginTop: 4 }}>{item.example}</p>
             </div>
-            <p className="small muted">Isyarat kata juga memakai ekspresi wajah. Latih bersama teman Tuli agar maknanya pas.</p>
-            <button className="btn btn-primary btn-lg" style={{ alignSelf: "flex-start" }} onClick={() => { setCamera(true); setNotice(""); scrollTo(0, 0); }}>Coba dengan kamera <ArrowRight /></button>
+            <div className="stack" style={{ "--gap": "6px" }}>
+              <div className="row" aria-label="Pose awal dan akhir" style={{ "--gap": "10px" }}>
+                {["awal", "akhir"].map((w, i) => (
+                  <React.Fragment key={w}>
+                    {i === 1 && <span style={{ flex: "none", display: "inline-flex", color: "var(--hijau)" }}><ArrowRight /></span>}
+                    <figure style={{ margin: 0, flex: "none", display: "flex", alignItems: "center", gap: 8 }}>
+                      <img src={gerakPose(picked, take, w)} alt={(w === "awal" ? "Pose awal" : "Pose akhir") + " kata " + picked} width="64" height="64" style={{ width: 64, height: 64, borderRadius: 14, display: "block", objectFit: "cover" }} />
+                      <figcaption className="small" style={{ fontWeight: 700 }}>{w === "awal" ? "Pose awal" : "Pose akhir"}</figcaption>
+                    </figure>
+                  </React.Fragment>
+                ))}
+              </div>
+              <p className="small muted"><b style={{ color: "#2E9E6B" }}>Hijau</b> tangan utama · <b style={{ color: "var(--oranye-teks)" }}>oranye</b> tangan bantu · garis putus-putus = arah gerak</p>
+            </div>
+            <button className="btn btn-primary btn-lg" style={{ alignSelf: "flex-start", maxWidth: "100%", whiteSpace: "normal" }} onClick={() => { setCamera(true); setNotice(""); scrollTo(0, 0); }}>Coba dengan kamera <ArrowRight /></button>
           </div>
         </section>
       </main>
