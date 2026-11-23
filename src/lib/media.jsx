@@ -1,6 +1,7 @@
 import { loadWordModels, compareWord } from "./motion";
 import React, { useState, useRef, useEffect } from "react";
-import { Camera, Mic, Square, Hand } from "lucide-react";
+import { Camera, Mic, Square, Hand, FlipHorizontal2 } from "lucide-react";
+import { getPrefs, setPrefs } from "../api";
 import { classifyAlphabet, describeHands, matchLetter, recognizesOverlap, touchesA } from "./shape";
 const getLocal = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem("isyara:" + key)) ?? fallback; } catch { return fallback; }
@@ -192,6 +193,7 @@ export function CameraLab({
   recognizeWords = false,
   autoStart = false,
   className = "",
+  onStatus,
 }) {
   const bank = useRef([]),
     letters = useRef([]);
@@ -209,7 +211,15 @@ export function CameraLab({
     [msg, setMsg] = useState("Kamera mati."),
     [label, setLabel] = useState(""),
     [choices, suggest] = useState([]),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [mirror, setMirror] = useState(() => getPrefs().mirror !== false);
+  function flip() {
+    setMirror(!mirror);
+    setPrefs({ ...getPrefs(), mirror: !mirror });
+  }
+  const statusObserver = useRef(onStatus);
+  statusObserver.current = onStatus;
+  useEffect(() => { statusObserver.current?.(msg); }, [msg]);
   const faceObserver = useRef(onFaceFrame);
   faceObserver.current = onFaceFrame;
   const letterObserver = useRef(onLetterFrame);
@@ -616,7 +626,7 @@ export function CameraLab({
     }, 2050);
   }
   return (
-    <section className={"camera " + className + (active ? " running" : "")}>
+    <section className={"camera " + className + (active ? " running" : "") + (mirror ? " mirror" : "")}>
       <div className="viewer">
         <video ref={video} playsInline muted />
         <canvas width="640" height="480" ref={canvas} />
@@ -634,6 +644,11 @@ export function CameraLab({
         >
           {active ? "Matikan kamera" : busy ? "Memuat…" : "Aktifkan kamera"}
         </button>
+        {active && (
+          <button aria-pressed={mirror} onClick={flip} title="Tampilkan kamera seperti cermin">
+            <FlipHorizontal2 size={18} aria-hidden="true" />{mirror ? "Cermin: nyala" : "Cermin: mati"}
+          </button>
+        )}
         {train && (
           <input
             aria-label="Nama isyarat"

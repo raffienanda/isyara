@@ -273,9 +273,9 @@ export function SiapKamera({ level }) {
     ["Tunjukkan telapak tanganmu", "Angkat tangan di depan dada, semua jari terlihat."],
     ["Mundur sedikit", "Sampai kedua tangan muat di dalam bingkai."]];
   return (
-    <div className="screen">
+    <div className="screen fit">
       <div className="split">
-        <section className="half bg-kamera on-dark stack" style={{ padding: "32px 48px 48px", "--gap": "26px" }}>
+        <section className="half bg-kamera on-dark stack" style={{ padding: "clamp(16px, 3.4vh, 32px) 48px clamp(20px, 4vh, 48px)", "--gap": "clamp(12px, 2.6vh, 26px)" }}>
           <div className="row between"><Back to={"tangan/" + level}>Kembali</Back><span className="muted" style={{ fontWeight: 700 }}>Langkah 2 dari 2</span></div>
           <h1 className="display h-1">Siapkan<br />kameramu</h1>
           <ol className="stack" style={{ margin: 0, padding: 0, listStyle: "none", "--gap": "12px" }}>

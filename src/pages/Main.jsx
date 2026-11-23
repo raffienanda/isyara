@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import { burst, countUp, gsap, rain, reduced, useSwap } from "../anim";
 import { CameraLab } from "../lib/media";
 import { describeHands, fingerFeedback } from "../lib/shape";
-import { getPrefs, recordProgress } from "../api";
+import { recordProgress } from "../api";
 import { LEVELS, TWO_HANDED, WORD_POINTS } from "../../shared/levels.js";
 import { ArrowLeft, ArrowRight, Check, Spark, go, handImg, tipFor, useAuth } from "../ui";
 
@@ -40,7 +40,6 @@ export function Main({ id, query }) {
   const [handCount, setHandCount] = useState(0);
   const [result, setResult] = useState({ mastered: new Set(), skipped: new Set() });
   const [elapsed, setElapsed] = useState(0);
-  const prefs = useMemo(getPrefs, []);
 
   const hold$ = useRef({ since: null, frames: 0, release: false, misses: 0, gap: false, lastMatch: 0 });
   const bank = useRef(null);
@@ -198,23 +197,23 @@ export function Main({ id, query }) {
   }
 
   return (
-    <div className={"screen" + (prefs.mirror ? " mirror-cam" : "")}>
+    <div className="screen fit">
       <div className="split">
         <section className="half bg-panel stack" aria-label="Contoh huruf" style={{ overflow: "hidden" }}>
           <div className="topbar" style={{ position: "relative", zIndex: 2 }}>
             <a className="back" href={"#/" + exit}><ArrowLeft />Keluar</a>
             <span className="muted" style={{ fontWeight: 700 }}>{title} · Kata {wi + 1}/{words.length}</span>
           </div>
-          <div className="grow" style={{ position: "relative", display: "grid", placeItems: "center", minHeight: 300 }}>
+          <div className="grow" style={{ position: "relative", display: "grid", placeItems: "center", minHeight: 220 }}>
             <span className="big-letter" aria-hidden="true">{letter}</span>
-            <span ref={handWrap} style={{ position: "relative", display: "grid", placeItems: "center", width: "min(420px, 80%)" }}>
+            <span ref={handWrap} style={{ position: "relative", display: "grid", placeItems: "center", width: "min(420px, 80%, 44vh)" }}>
               <img className={"hand-img" + (user.hand === "kiri" ? " flip" : "")} style={{ width: "100%" }} src={handImg(letter)} alt={"Contoh tangan 3D untuk huruf " + letter} />
             </span>
             <span className="display" style={{ position: "absolute", left: 32, top: 8, display: "grid", placeItems: "center", width: 92, height: 92, borderRadius: 28, background: "var(--hijau)", color: "var(--krem)", fontSize: "3.6rem" }}>{letter}</span>
             {TWO_HANDED.has(letter) && <span className="chip chip-peach" style={{ position: "absolute", left: 32, top: 112 }}>Dua tangan</span>}
           </div>
           <p className="muted" style={{ textAlign: "center", maxWidth: 460, margin: "0 auto", padding: "0 24px", position: "relative" }}>{tipFor(letter)}</p>
-          <div className="stack center" style={{ padding: "22px 24px 30px", "--gap": "16px", position: "relative" }}>
+          <div className="stack center" style={{ padding: "clamp(12px, 2.2vh, 22px) 24px clamp(16px, 3vh, 30px)", "--gap": "clamp(10px, 1.8vh, 16px)", position: "relative" }}>
             <div ref={row} className="word-row" aria-label={`Kata ${word}, huruf ${li + 1} dari ${word.length}`}>
               {Array.from(word).map((ch, i) => <span key={i} className={"ch" + (i < li ? " done" : i === li ? " now" : "")}>{ch}<i /></span>)}
             </div>

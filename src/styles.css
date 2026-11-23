@@ -47,7 +47,7 @@ a:hover { color: var(--tua); }
 .between { justify-content: space-between; }
 .center { align-items: center; justify-content: center; text-align: center; }
 .split { display: flex; flex-wrap: wrap; flex: 1; }
-.half { flex: 1 1 560px; min-width: 0; min-height: 50vh; position: relative; }
+.half { flex: 1 1 480px; min-width: 0; min-height: 50vh; position: relative; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--min, 300px), 1fr)); gap: var(--gap, 18px); }
 .grow { flex: 1; }
 .on-dark { color: var(--krem); }
@@ -62,6 +62,20 @@ a:hover { color: var(--tua); }
 .card-tua .muted, .on-dark .card-tua .muted { color: #CDEFD9; }
 .on-dark :is(.card, .card-mint, .card-peach) a:not(.btn) { color: var(--hijau); }
 .small { font-size: .85rem; }
+
+/* Screens that should fill exactly one desktop window, with no page scroll. */
+@media (min-width: 960px) and (min-height: 540px) {
+  .fit { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+  .fit .split { min-height: 0; flex-wrap: nowrap; }
+  .fit .half { min-height: 0 !important; }
+  .fit .half.stack { overflow-y: auto; }
+}
+.masuk-grid { display: grid; grid-template-columns: minmax(0, 540px); justify-content: center; align-content: center; align-items: center; gap: clamp(16px, 3vh, 28px) 56px; width: 100%; max-width: 1180px; margin: 0 auto; padding: 4px 24px 32px; }
+.form-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: clamp(10px, 1.8vh, 16px) 14px; align-items: end; }
+@media (min-width: 960px) { .masuk-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 540px); } }
+@media (max-width: 959px) { .masuk-hello { display: none; } .split > .cam-first { order: -1; flex-basis: 100%; min-height: 62vh !important; } }
+@media (min-width: 960px) { .masuk-grid .choice { flex-direction: row; flex-wrap: wrap; column-gap: 12px; text-align: left; padding: 10px 14px; } .masuk-grid .choice img { width: 48px; height: 48px; } .masuk-grid .choice .small { flex-basis: 100%; padding-left: 60px; margin-top: -14px; } }
+@media (min-width: 960px) and (max-height: 820px) { .fit .input { height: 50px; } .fit .choice { padding: 10px 12px; } .fit .btn-lg { min-height: 56px; } }
 
 /* ---------- Backgrounds (paper cutout art, see public/bg) ---------- */
 .bg-intro { background: var(--hijau) url(/bg/bg-intro.webp) center/cover no-repeat; }
@@ -164,7 +178,7 @@ textarea.input { height: auto; padding: 14px 20px; border-radius: 24px; resize: 
 .camera { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--gelap); color: var(--krem); }
 .camera .viewer { position: relative; flex: 1; overflow: hidden; display: grid; place-items: center; }
 .camera .viewer video, .camera .viewer canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.mirror-cam .camera .viewer video, .mirror-cam .camera .viewer canvas { transform: scaleX(-1); }
+.camera.mirror .viewer video, .camera.mirror .viewer canvas { transform: scaleX(-1); }
 .camera .viewer svg { opacity: .5; }
 .camera > small { display: none; }
 .camera > p[role="status"] { display: none; }
@@ -172,12 +186,13 @@ textarea.input { height: auto; padding: 14px 20px; border-radius: 24px; resize: 
 .camera:not(.running) .viewer svg { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .2; transform: scale(.9); } }
 .camera > .controls { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 10px; }
-.camera.running > .controls { top: auto; bottom: auto; left: auto; right: 24px; top: 80px; transform: none; }
-.camera > .controls button { min-height: 52px; padding: 0 26px; border-radius: 999px; border: 0; background: var(--krem); color: var(--tua); font-weight: 700; }
-.camera.running > .controls button { min-height: 40px; padding: 0 16px; font-size: .85rem; background: rgba(255, 246, 229, .16); color: var(--krem); }
-.camera-word > small { display: block; position: absolute; left: 24px; top: 80px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 246, 229, .14); }
-.camera-word > p[role="status"] { display: block; position: absolute; left: 24px; right: 24px; bottom: 24px; padding: 14px 20px; border-radius: 24px; background: var(--krem); color: var(--tua); font-weight: 700; }
-.camera-word > .controls { top: auto; bottom: 110px; left: 50%; transform: translateX(-50%); }
+/* While running, the camera buttons sit in one row under the top overlay, right aligned, so they never cover each other. */
+.camera.running > .controls { z-index: 5; left: 24px; right: 24px; top: 80px; transform: none; justify-content: flex-end; flex-wrap: wrap; pointer-events: none; }
+.camera.running > .controls > * { pointer-events: auto; }
+.camera > .controls button { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 26px; border-radius: 999px; border: 0; background: var(--krem); color: var(--tua); font-weight: 700; }
+.camera.running > .controls button { min-height: 42px; padding: 0 16px; font-size: .85rem; background: rgba(18, 36, 28, .72); color: var(--krem); border: 1px solid rgba(255, 246, 229, .25); backdrop-filter: blur(6px); }
+.camera.running > .controls button[aria-pressed="true"] { background: var(--neon); color: var(--tua); border-color: var(--neon); }
+.camera-word > small { display: block; position: absolute; z-index: 4; left: 24px; bottom: 24px; max-width: calc(100% - 48px); padding: 8px 14px; border-radius: 999px; background: rgba(18, 36, 28, .72); font-weight: 700; }
 .overlay-top { position: absolute; left: 24px; right: 24px; top: 24px; z-index: 3; display: flex; justify-content: space-between; align-items: center; gap: 10px; pointer-events: none; }
 .overlay-top > * { pointer-events: auto; }
 .overlay-bottom { position: absolute; left: 24px; right: 24px; bottom: 24px; z-index: 3; display: flex; flex-direction: column; gap: 12px; }
